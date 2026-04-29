@@ -19,7 +19,7 @@ const ph = {
 };
 
 // ══ STATE ══════════════════════════════════════════
-let pace='steady', calcMode='weight';
+let pace='steady', calcMode='weight', _paceOnly=false;
 let checkins=JSON.parse(localStorage.getItem(STORE+'checkins')||'[]');
 let planData=JSON.parse(localStorage.getItem(STORE+'plan')||'null');
 let prevGoalDate=planData?planData.goalDate:null;
@@ -313,7 +313,7 @@ function updateGoalDateDelta(newGoalDateStr){
 
 // ══ PROGRESS SNAPSHOT ════════════════════════════════
 function renderProgressSnap(){
-  const plan=planData||JSON.parse(localStorage.getItem(STORE+'plan')||'null');
+  const plan=JSON.parse(localStorage.getItem(STORE+'plan')||'null');
   const snap=$('progress-snap');
   if(!checkins.length||!plan){snap.classList.remove('visible');return;}
   snap.classList.add('visible');
@@ -415,7 +415,7 @@ function calculate(){
     $('r-date').textContent=fmtDate(targetDate);$('r-rate').textContent=fmtD(avgRate)+' lbs/wk avg';$('r-loss').textContent=totalLost+' lbs';
     renderMilestones(cw,projWt,avgRate,sim);renderProjChart(sim,cw,projWt);
     planData={cw,gw:projWt,sim,cal:safeCal,exPerDay,goalDate:gds,savedAt:planData?.savedAt||new Date().toISOString(),mode:'date'};
-    localStorage.setItem(STORE+'plan',JSON.stringify(planData));return;
+    if(!_paceOnly) localStorage.setItem(STORE+'plan',JSON.stringify(planData));return;
   }
 
   const gw=parseFloat($('gw').value)||175;
@@ -432,7 +432,7 @@ function calculate(){
   $('r-date').textContent=fmtDate(goalDate);$('r-rate').textContent=fmtD(avgRate)+' lbs/wk avg';
   renderMilestones(cw,gw,avgRate,sim);renderProjChart(sim,cw,gw);
   planData={cw,gw,sim,cal:safeCal,exPerDay,goalDate:gds,savedAt:planData?.savedAt||new Date().toISOString(),mode:'weight'};
-  localStorage.setItem(STORE+'plan',JSON.stringify(planData));
+  if(!_paceOnly) localStorage.setItem(STORE+'plan',JSON.stringify(planData));
 }
 
 // ══ MILESTONES ════════════════════════════════════════
@@ -689,7 +689,9 @@ function setPace(p){
     if(btn) btn.classList.toggle('active',n===p);
   });
   ph.capture('safety_cap_changed',{pace:p});
+  _paceOnly=true;
   calculate();
+  _paceOnly=false;
 }
 
 // ══ PAGE NAV ══════════════════════════════════════════
