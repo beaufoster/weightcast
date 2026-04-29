@@ -1,0 +1,19 @@
+{
+  "name": "trimly",
+  "version": "1.0.0",
+  "description": "A progressive web app for tracking weight loss progress and calculating personalized weight loss plans.",
+  "main": "index.html",
+  "homepage": "https://yourusername.github.io/trimly",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^6.4.2"
+  }
+}
