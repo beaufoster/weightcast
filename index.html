@@ -9,7 +9,7 @@
 <title>Trimly — Weight Loss Calculator</title>
 <link rel="manifest" href="/trimly/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/trimly/assets/main-CqWUuRhm.js"></script>
+  <script type="module" crossorigin src="/trimly/assets/main-CWP32baR.js"></script>
   <link rel="stylesheet" crossorigin href="/trimly/assets/main-BEKSOLr7.css">
 </head>
 <body>
@@ -325,7 +325,7 @@
       <div class="ci-fields">
         <div class="field"><label>Date</label><input type="date" id="ci-date"></div>
         <div class="field"><label>Weight (lbs)</label><input type="number" id="ci-weight" placeholder="207.5" step="0.1" min="50" max="600" inputmode="decimal"></div>
-        <div class="field ci-note-row"><label>Note (optional)</label><textarea id="ci-note" placeholder="e.g. felt bloated, period week, vacation…"></textarea></div>
+        <div class="field ci-note-row"><label>Note (optional)</label><textarea id="ci-note" placeholder="e.g. felt bloated, period week, vacation…" maxlength="200"></textarea></div>
       </div>
       <button class="btn-add" onclick="addCheckin()">Log It ✓</button>
       <div id="ci-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
@@ -346,16 +346,16 @@
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div id="modal-form-view">
       <div class="modal-icon">📋</div>
-      <h2>Get Your Free Plan</h2>
-      <p>We'll email you a personalized PDF with your calorie targets, milestones, and weekly goals.</p>
+      <h2>Download Your Free Plan</h2>
+      <p>Get a personalized PDF with your calorie targets, milestone timeline, and weekly goals — ready to print or save.</p>
       <ul class="modal-features">
         <li>Custom daily calorie target</li>
         <li>Projected milestone timeline</li>
         <li>Weekly deficit breakdown</li>
       </ul>
-      <input type="text" id="modal-name" placeholder="Your first name">
-      <input type="email" id="modal-email" placeholder="Your email address" inputmode="email">
-      <button class="modal-submit" onclick="submitModal()">Send Me My Plan →</button>
+      <input type="text" id="modal-name" placeholder="Your first name (optional)">
+      <input type="email" id="modal-email" placeholder="Your email (optional)">
+      <button class="modal-submit" onclick="submitModal()">Get My Plan →</button>
       <span class="modal-skip" onclick="skipModal()">No thanks, just download</span>
     </div>
     <div id="modal-success-view" style="display:none;" class="modal-success">
