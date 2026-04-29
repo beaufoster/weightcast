@@ -1005,13 +1005,18 @@ async function signIn(){
   errEl.style.display='none';
   const btn=$('sync-submit-btn');
   if(btn){btn.textContent='Sending…';btn.disabled=true;}
-  // Always send an explicit redirectTo with trailing slash — GoTrue rejects paths without it
-  const redirectTo=window.location.origin+window.location.pathname.replace(/([^/])$/,'$1/');
+  // Use origin only — avoids subpath validation issues in GoTrue
+  const redirectTo=window.location.origin+'/';
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
   if(btn){btn.textContent='Send Code →';btn.disabled=false;}
   if(error){
-    console.warn('[Trimly] signInWithOtp error:',error,'redirectTo:',redirectTo);
-    errEl.textContent=error.message;errEl.style.display='block';
+    console.warn('[Trimly] signInWithOtp error:',error.message,'| redirectTo:',redirectTo,'| status:',error.status);
+    if(error.message.toLowerCase().includes('invalid')){
+      errEl.innerHTML='Configuration error — open browser DevTools (F12) › Console and send the <strong>[Trimly]</strong> line to support.';
+    } else {
+      errEl.textContent=error.message;
+    }
+    errEl.style.display='block';
     return;
   }
   _otpEmail=email;
