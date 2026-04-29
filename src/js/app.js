@@ -22,7 +22,7 @@ const ph = {
 };
 
 // ══ STATE ══════════════════════════════════════════
-let pace='steady', calcMode='weight', _paceOnly=false, currentUser=null, _syncInFlight=false, _syncTimer=null;
+let pace='steady', calcMode='weight', _paceOnly=false, currentUser=null, _syncInFlight=false, _syncTimer=null, _otpEmail='';
 let checkins=JSON.parse(localStorage.getItem(STORE+'checkins')||'[]');
 let planData=JSON.parse(localStorage.getItem(STORE+'plan')||'null');
 let prevGoalDate=planData?planData.goalDate:null;
@@ -566,7 +566,7 @@ function renderCheckinPage(){
   if(!checkins.length){
     $('ps-current').textContent=plan?fmtD(plan.cw)+' lbs':'—';$('ps-lost').textContent='0 lbs';$('ps-remain').textContent=plan?fmtD(plan.cw-plan.gw)+' lbs':'—';
     $('ci-entries-wrap').innerHTML='<div class="empty-state"><div class="ei">📋</div><h4>No check-ins yet</h4><p>Log your weight each week to track real progress. Consistency is everything.</p></div>';
-    $('ci-chart-card').style.display='none';return;
+    $('ci-chart-card').style.display='none';updateSyncUI();return;
   }
   const sorted=[...checkins].sort((a,b)=>new Date(a.date)-new Date(b.date));
   const latest=sorted[sorted.length-1];
@@ -601,6 +601,7 @@ function renderCheckinPage(){
   $('ci-entries-wrap').innerHTML='<div class="ci-entries">'+html+'</div>';
   $('ci-chart-card').style.display='block';
   renderCheckinChart(sorted,plan,startWt,goalWt);
+  updateSyncUI();
 }
 
 function renderCheckinChart(sorted,plan,startWt,goalWt){
@@ -831,6 +832,12 @@ $('ci-note').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='
 $('modal-name').addEventListener('keydown',e=>{if(e.key==='Enter')$('modal-email').focus();});
 $('modal-email').addEventListener('keydown',e=>{if(e.key==='Enter')submitModal();});
 $('sync-email').addEventListener('keydown',e=>{if(e.key==='Enter')signIn();});
+$('sync-otp').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOtp();});
+$('sync-otp').addEventListener('input',e=>{
+  const v=e.target.value.replace(/\D/g,'').slice(0,6);
+  e.target.value=v;
+  if(v.length===6)setTimeout(verifyOtp,0);
+});
 
 // Escape closes any open overlay
 document.addEventListener('keydown',e=>{
@@ -941,27 +948,48 @@ function importData(e){
 }
 
 // ══ AUTH & SYNC ═══════════════════════════════════════
+function showToast(msg,duration=3500){
+  const t=document.createElement('div');
+  t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},duration);
+}
 function updateSyncUI(){
   const btn=$('sync-btn');
+  const nudge=$('sync-nudge');
   if(!btn)return;
-  if(!sb){btn.style.display='none';return;}
+  if(!sb){
+    btn.style.display='none';
+    if(nudge)nudge.style.display='none';
+    return;
+  }
   if(currentUser){
-    btn.textContent='✓ Synced';
-    btn.title=`Signed in as ${currentUser.email} — click to sign out`;
+    const email=currentUser.email||'';
+    const short=email.length>26?email.slice(0,24)+'…':email;
+    btn.textContent='✓ '+short;
+    btn.title='Signed in as '+email+' · tap to sign out';
     btn.classList.add('synced');
     btn.onclick=signOut;
+    if(nudge)nudge.style.display='none';
   } else {
-    btn.textContent='☁️ Sync';
-    btn.title='Sign in to sync across devices';
+    btn.textContent='☁️ Create Account';
+    btn.title='Save your progress and sync across devices';
     btn.classList.remove('synced');
     btn.onclick=openSyncSheet;
+    const dismissed=localStorage.getItem(STORE+'sync_nudge_dismissed');
+    if(nudge)nudge.style.display=(!dismissed&&checkins.length>0)?'flex':'none';
   }
+}
+function dismissSyncNudge(){
+  localStorage.setItem(STORE+'sync_nudge_dismissed','1');
+  const nudge=$('sync-nudge');if(nudge)nudge.style.display='none';
 }
 function openSyncSheet(){
   if(!sb)return;
   $('sync-overlay').classList.add('show');
-  $('sync-form-view').style.display='block';
-  $('sync-sent-view').style.display='none';
+  $('sync-step-email').style.display='block';
+  $('sync-step-otp').style.display='none';
   $('sync-error').style.display='none';
   $('sync-email').value='';
   setTimeout(()=>$('sync-email').focus(),300);
@@ -978,20 +1006,43 @@ async function signIn(){
   const btn=$('sync-submit-btn');
   if(btn){btn.textContent='Sending…';btn.disabled=true;}
   const{error}=await sb.auth.signInWithOtp({email});
-  if(btn){btn.textContent='Send Magic Link →';btn.disabled=false;}
+  if(btn){btn.textContent='Send Code →';btn.disabled=false;}
   if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
-  $('sync-form-view').style.display='none';
-  $('sync-sent-view').style.display='block';
-  ph.capture('magic_link_sent');
+  _otpEmail=email;
+  const desc=$('sync-otp-desc');
+  if(desc)desc.textContent='We sent a 6-digit code to '+email+'. Enter it below.';
+  $('sync-step-email').style.display='none';
+  $('sync-step-otp').style.display='block';
+  $('sync-otp').value='';
+  $('sync-otp-error').style.display='none';
+  setTimeout(()=>$('sync-otp').focus(),300);
+  ph.capture('otp_sent');
+}
+async function verifyOtp(){
+  if(!sb||!_otpEmail)return;
+  const btn=$('sync-verify-btn');
+  if(btn?.disabled)return;
+  const otp=$('sync-otp').value.replace(/\D/g,'');
+  const errEl=$('sync-otp-error');
+  if(otp.length!==6){errEl.textContent='Enter the 6-digit code from your email.';errEl.style.display='block';return;}
+  errEl.style.display='none';
+  if(btn){btn.textContent='Verifying…';btn.disabled=true;}
+  const{error}=await sb.auth.verifyOtp({email:_otpEmail,token:otp,type:'email'});
+  if(btn){btn.textContent='Verify →';btn.disabled=false;}
+  if(error){
+    const lower=error.message.toLowerCase();
+    const msg=(lower.includes('expired')||lower.includes('invalid'))?'That code is incorrect or expired — request a new one.':error.message;
+    errEl.textContent=msg;errEl.style.display='block';
+    return;
+  }
+  // onAuthStateChange fires and handles the rest
 }
 async function signOut(){
   if(!sb)return;
   await sb.auth.signOut();
   currentUser=null;
+  _otpEmail='';
   updateSyncUI();
-  $('sync-form-view').style.display='block';
-  $('sync-sent-view').style.display='none';
-  $('sync-email').value='';
   ph.capture('signed_out');
 }
 async function syncUp(){
@@ -1051,13 +1102,13 @@ if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
     currentUser=session?.user||null;
     updateSyncUI();
-    // Only do a full sync on first sign-in or page load with existing session.
-    // TOKEN_REFRESHED fires every hour — no need to re-sync the whole dataset.
     if(currentUser&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
       closeSyncSheet();
       const changed=await syncDown();
       await syncUp();
       if(changed){renderCheckinPage();calculate();}
+      updateSyncUI();
+      if(event==='SIGNED_IN')showToast('✓ Signed in! Your data is backed up.');
       ph.capture('signed_in',{event});
     }
   });
@@ -1091,7 +1142,9 @@ window.importData = importData;
 window.openSyncSheet = openSyncSheet;
 window.closeSyncSheet = closeSyncSheet;
 window.signIn = signIn;
+window.verifyOtp = verifyOtp;
 window.signOut = signOut;
+window.dismissSyncNudge = dismissSyncNudge;
 
 window.addEventListener('resize',()=>{calculate();if($('page-checkin').classList.contains('active'))renderCheckinPage();});
 
