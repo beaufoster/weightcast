@@ -9,8 +9,8 @@
 <title>Trimly — Weight Loss Calculator</title>
 <link rel="manifest" href="/trimly/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/trimly/assets/main-Bsc78lId.js"></script>
-  <link rel="stylesheet" crossorigin href="/trimly/assets/main-dKMT9u4C.css">
+  <script type="module" crossorigin src="/trimly/assets/main-BLFIXPs4.js"></script>
+  <link rel="stylesheet" crossorigin href="/trimly/assets/main-CV3p-FEK.css">
 </head>
 <body>
 
@@ -55,18 +55,26 @@
 <div class="sync-overlay" id="sync-overlay">
   <div class="sync-sheet">
     <button class="sync-close" onclick="closeSyncSheet()">✕</button>
-    <span class="sync-ico">☁️</span>
-    <h2>Sync Across Devices</h2>
-    <p>Enter your email — we'll send a magic link. No password needed.</p>
-    <div id="sync-form-view">
+
+    <!-- Step 1: Email -->
+    <div id="sync-step-email">
+      <span class="sync-ico">☁️</span>
+      <h2>Save Your Progress</h2>
+      <p>Create a free account to keep your data safe and access it from any device — no password needed.</p>
       <input type="email" id="sync-email" placeholder="your@email.com" autocomplete="email">
-      <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Send Magic Link →</button>
+      <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Send Code →</button>
       <div id="sync-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
+      <p class="sync-fine-print">Free forever. We never share your data.</p>
     </div>
-    <div id="sync-sent-view" style="display:none;text-align:center;">
-      <div style="font-size:2.5rem;margin-bottom:10px;">📬</div>
-      <p><strong>Check your email!</strong></p>
-      <p style="color:var(--gray);font-size:0.88rem;margin-top:6px;">Click the link we sent to sign in and sync your data across devices.</p>
+
+    <!-- Step 2: 6-digit code -->
+    <div id="sync-step-otp" style="display:none;">
+      <span class="sync-ico">📬</span>
+      <h2>Check Your Email</h2>
+      <p id="sync-otp-desc">We sent a 6-digit code to your email. Enter it below.</p>
+      <input type="text" id="sync-otp" class="sync-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+      <button class="sync-submit" id="sync-verify-btn" onclick="verifyOtp()">Verify →</button>
+      <div id="sync-otp-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
       <span class="sync-retry-link" onclick="openSyncSheet()">Use a different email</span>
     </div>
   </div>
@@ -357,6 +365,17 @@
     </div>
     <div id="ci-entries-wrap"></div>
     <div class="ci-table-wrap" id="ci-table-wrap" style="display:none;"></div>
+
+    <!-- SYNC NUDGE (shown when user has data but no account) -->
+    <div class="sync-nudge" id="sync-nudge" style="display:none;" onclick="openSyncSheet()">
+      <span class="sync-nudge-ico">☁️</span>
+      <div class="sync-nudge-text">
+        <strong>Back up your progress</strong>
+        <span>Create a free account — never lose your data.</span>
+      </div>
+      <span class="sync-nudge-arrow">Save →</span>
+      <button class="sync-nudge-dismiss" onclick="event.stopPropagation();dismissSyncNudge()" aria-label="Dismiss">✕</button>
+    </div>
 
     <!-- DATA EXPORT / IMPORT -->
     <div class="data-actions-bar">
