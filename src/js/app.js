@@ -832,12 +832,6 @@ $('ci-note').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='
 $('modal-name').addEventListener('keydown',e=>{if(e.key==='Enter')$('modal-email').focus();});
 $('modal-email').addEventListener('keydown',e=>{if(e.key==='Enter')submitModal();});
 $('sync-email').addEventListener('keydown',e=>{if(e.key==='Enter')signIn();});
-$('sync-otp').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOtp();});
-$('sync-otp').addEventListener('input',e=>{
-  const v=e.target.value.replace(/\D/g,'').slice(0,6);
-  e.target.value=v;
-  if(v.length===6)setTimeout(verifyOtp,0);
-});
 
 // Escape closes any open overlay
 document.addEventListener('keydown',e=>{
@@ -1005,8 +999,7 @@ async function signIn(){
   errEl.style.display='none';
   const btn=$('sync-submit-btn');
   if(btn){btn.textContent='Sending…';btn.disabled=true;}
-  // Use origin only — avoids subpath validation issues in GoTrue
-  const redirectTo=window.location.origin+'/';
+  const redirectTo=window.location.href.replace(/[?#].*/,'');
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
   if(btn){btn.textContent='Send Code →';btn.disabled=false;}
   if(error){
@@ -1029,24 +1022,12 @@ async function signIn(){
   setTimeout(()=>$('sync-otp').focus(),300);
   ph.capture('otp_sent');
 }
-async function verifyOtp(){
-  if(!sb||!_otpEmail)return;
-  const btn=$('sync-verify-btn');
-  if(btn?.disabled)return;
-  const otp=$('sync-otp').value.replace(/\D/g,'');
-  const errEl=$('sync-otp-error');
-  if(otp.length!==6){errEl.textContent='Enter the 6-digit code from your email.';errEl.style.display='block';return;}
-  errEl.style.display='none';
-  if(btn){btn.textContent='Verifying…';btn.disabled=true;}
-  const{error}=await sb.auth.verifyOtp({email:_otpEmail,token:otp,type:'email'});
-  if(btn){btn.textContent='Verify →';btn.disabled=false;}
-  if(error){
-    const lower=error.message.toLowerCase();
-    const msg=(lower.includes('expired')||lower.includes('invalid'))?'That code is incorrect or expired — request a new one.':error.message;
-    errEl.textContent=msg;errEl.style.display='block';
-    return;
-  }
-  // onAuthStateChange fires and handles the rest
+async function resendLink(){
+  if(!_otpEmail)return;
+  $('sync-step-otp').style.display='none';
+  $('sync-step-email').style.display='block';
+  $('sync-email').value=_otpEmail;
+  await signIn();
 }
 async function signOut(){
   if(!sb)return;
@@ -1153,7 +1134,7 @@ window.importData = importData;
 window.openSyncSheet = openSyncSheet;
 window.closeSyncSheet = closeSyncSheet;
 window.signIn = signIn;
-window.verifyOtp = verifyOtp;
+window.resendLink = resendLink;
 window.signOut = signOut;
 window.dismissSyncNudge = dismissSyncNudge;
 

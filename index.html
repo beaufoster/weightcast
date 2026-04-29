@@ -62,19 +62,18 @@
       <h2>Save Your Progress</h2>
       <p>Create a free account to keep your data safe and access it from any device — no password needed.</p>
       <input type="email" id="sync-email" placeholder="your@email.com" autocomplete="email">
-      <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Send Code →</button>
+      <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Send Link →</button>
       <div id="sync-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
       <p class="sync-fine-print">Free forever. We never share your data.</p>
     </div>
 
-    <!-- Step 2: 6-digit code -->
+    <!-- Step 2: magic link sent -->
     <div id="sync-step-otp" style="display:none;">
       <span class="sync-ico">📬</span>
       <h2>Check Your Email</h2>
-      <p id="sync-otp-desc">We sent a 6-digit code to your email. Enter it below.</p>
-      <input type="text" id="sync-otp" class="sync-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
-      <button class="sync-submit" id="sync-verify-btn" onclick="verifyOtp()">Verify →</button>
+      <p id="sync-otp-desc">We sent a sign-in link to your email. Click it to sign in — then return to this tab.</p>
       <div id="sync-otp-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
+      <button class="sync-submit" id="sync-resend-btn" onclick="resendLink()">Resend Link</button>
       <span class="sync-retry-link" onclick="openSyncSheet()">Use a different email</span>
     </div>
   </div>
