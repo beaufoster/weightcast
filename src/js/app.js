@@ -9,7 +9,7 @@ if(IS_TEST){
 
 // ══ POSTHOG ANALYTICS ══════════════════════════════
 // Replace YOUR_POSTHOG_KEY with your actual PostHog project API key from posthog.com
-const PH_KEY = 'phc_rc5wkdaGcT7g5Zfwr5Kbi9LqBRQaKnyr92ah74hUVZea';
+const PH_KEY = 'phc_uANfyidyehw2qkveadqRKqyoJQheqT3Vo5r8iEKxTRvc';
 const ph = {
   identify(id,props){if(IS_TEST||PH_KEY==='YOUR_POSTHOG_KEY')return;try{posthog.identify(id,props);}catch(e){}},
   capture(event,props={}){
