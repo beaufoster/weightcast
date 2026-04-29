@@ -40,6 +40,7 @@ const actMults=[1.2,1.375,1.55,1.725];
 const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(n).toLocaleString();
 const fmtD=(n,d=1)=>(+n).toFixed(d);
+const escapeHtml=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 function addWeeks(d,w){const x=new Date(d);x.setDate(x.getDate()+Math.round(w*7));return x;}
 function fmtDate(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 function calcBMR(wt,ht,age,sex){const kg=wt*0.453592,cm=ht*2.54;return sex==='male'?10*kg+6.25*cm-5*age+5:10*kg+6.25*cm-5*age-161;}
@@ -137,7 +138,7 @@ function renderShareCard(){
   if(name){ctx.font='bold 15px DM Sans,sans-serif';ctx.fillStyle='rgba(255,255,255,0.4)';ctx.textAlign='right';ctx.fillText(name,W-32,H-32);}
   // Tagline
   ctx.font='13px DM Sans,sans-serif';ctx.fillStyle='rgba(255,255,255,0.25)';
-  ctx.textAlign='center';ctx.fillText('trymytrimly.com',W/2,H-28);
+  ctx.textAlign='center';ctx.fillText('beaufoster.github.io/trimly',W/2,H-28);
   // Scale canvas display
   canvas.style.width='100%';canvas.style.height='auto';
 }
@@ -565,7 +566,7 @@ function renderCheckinPage(){
       <div class="ci-entry-left">
         <div class="ci-entry-date">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</div>
         <div class="ci-entry-wt">${fmtD(ci.weight)} lbs</div>
-        ${ci.note?`<div class="ci-entry-note">${ci.note}</div>`:''}
+        ${ci.note?`<div class="ci-entry-note">${escapeHtml(ci.note)}</div>`:''}
       </div>
       <div class="ci-entry-right">
         <div class="ci-diff ${diffCls}">${diffTxt}</div>
@@ -643,6 +644,8 @@ function addCheckin(){
   const note=($('ci-note').value||'').trim();
   const errEl=$('ci-error');
   if(!date){errEl.textContent='Please select a date.';errEl.style.display='block';return;}
+  if(date>new Date().toISOString().split('T')[0]){errEl.textContent='Date can\'t be in the future.';errEl.style.display='block';return;}
+  if(checkins.find(c=>c.date===date)){errEl.textContent='You already logged a check-in for this date.';errEl.style.display='block';return;}
   if(!weight||weight<50||weight>600){errEl.textContent='Enter a valid weight (50–600 lbs).';errEl.style.display='block';return;}
   errEl.style.display='none';
   const prevStreak=calcStreak();
@@ -704,6 +707,7 @@ function showPage(name){
   ['calculator','checkin'].forEach(n=>{const t=$('tab-'+n);if(t)t.classList.toggle('active',n===name);});
   document.querySelectorAll('.desktop-nav-tab').forEach(t=>t.classList.toggle('active',t.textContent.toLowerCase().includes(name==='calculator'?'calc':'check')));
   ph.capture('page_viewed',{page:name});
+  window.scrollTo(0,0);
   if(name==='checkin'){renderCheckinPage();setTimeout(()=>$('ci-weight').focus(),100);}
   if(name==='calculator')setTimeout(calculate,50);
 }
@@ -735,7 +739,7 @@ function downloadPDF(){
   closeModal();
   const plan=planData;
   if(!plan){alert('Set up your plan in the Calculator first.');return;}
-  const name=$('modal-name').value.trim()||'Your';
+  const name=escapeHtml($('modal-name').value.trim()||'Your');
   const goalDate=new Date(plan.goalDate);
   const totalLoss=+(plan.cw-plan.gw).toFixed(1);
   const weeks=plan.sim?plan.sim.length:0;
