@@ -388,7 +388,7 @@ function simulateLoss(startWt,goalWt,calIntake,exPerDay,actMult,age,ht,sex,maxLb
 
 // ══ CALCULATE ════════════════════════════════════════
 function calculate(){
-  const cw=toLbs(parseFloat($('cw').value)||210);
+  const cw=Math.max(toLbs(parseFloat($('cw').value)||210),50);
   const age=parseInt($('age').value)||35;
   const ht=((parseInt($('ht-ft').value)||5)*12)+(parseInt($('ht-in').value)||10);
   const sex=$('sex').value;
@@ -448,7 +448,7 @@ function calculate(){
     return;
   }
 
-  const gw=toLbs(parseFloat($('gw').value)||175);
+  const gw=Math.max(toLbs(parseFloat($('gw').value)||175),30);
   const totalLoss=+Math.max(cw-gw,0).toFixed(1);
   $('r-loss').textContent=fmtWt(totalLoss);
   if(totalLoss<=0){$('r-weeks').textContent='🎉';$('r-weeks-lbl').textContent='Already there!';$('r-date').textContent='—';$('r-rate').textContent='—';renderMilestones(cw,gw,0,[]);renderProjChart([],cw,gw);return;}
@@ -684,16 +684,18 @@ function renderCheckinChart(sorted,plan,startWt,goalWt){
 }
 
 function addCheckin(){
+  const btn=$('btn-add-checkin');
+  if(btn)btn.disabled=true;
   const date=$('ci-date').value;
   const weightRaw=parseFloat($('ci-weight').value);
   const weight=toLbs(weightRaw);
   const note=($('ci-note').value||'').trim();
   const errEl=$('ci-error');
-  if(!date){errEl.textContent='Please select a date.';errEl.style.display='block';return;}
-  if(date>new Date().toISOString().split('T')[0]){errEl.textContent='Date can\'t be in the future.';errEl.style.display='block';return;}
-  if(checkins.find(c=>c.date===date&&c.id!==_editId)){errEl.textContent='You already logged a check-in for this date.';errEl.style.display='block';return;}
-  if(!weightRaw||weight<50||weight>600){errEl.textContent='Enter a valid weight ('+(unitPref==='kg'?'23–272 kg':'50–600 lbs')+').';errEl.style.display='block';return;}
-  errEl.style.display='none';
+  const fail=msg=>{errEl.textContent=msg;errEl.style.display='block';if(btn)btn.disabled=false;};
+  if(!date){fail('Please select a date.');return;}
+  if(date>new Date().toISOString().split('T')[0]){fail('Date can\'t be in the future.');return;}
+  if(checkins.find(c=>c.date===date&&c.id!==_editId)){fail('You already logged a check-in for this date.');return;}
+  if(!weightRaw||weight<50||weight>600){fail('Enter a valid weight ('+(unitPref==='kg'?'23–272 kg':'50–600 lbs')+').');return;}
   // Handle edit mode — remove old entry, track old date for Supabase
   const isEdit=_editId!==null;
   let oldDate=null;
@@ -771,6 +773,7 @@ function setPace(p){
 
 // ══ PAGE NAV ══════════════════════════════════════════
 function showPage(name){
+  if(name!=='checkin'&&_editId!==null)cancelEditCheckin();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-'+name).classList.add('active');
   ['calculator','checkin'].forEach(n=>{const t=$('tab-'+n);if(t)t.classList.toggle('active',n===name);});
@@ -783,6 +786,7 @@ function showPage(name){
 
 // ══ MODAL ══════════════════════════════════════════════
 function openModal(){
+  if(!planData){showToast('Set up your plan first — adjust the sliders on the Calculator.');showPage('calculator');return;}
   $('modal-overlay').classList.add('open');
   $('modal-form-view').style.display='block';
   $('modal-success-view').style.display='none';
@@ -852,10 +856,12 @@ function downloadPDF(){
 }
 
 // ══ EVENTS ═════════════════════════════════════════════
+let _calcTimer;
+function debouncedCalculate(){clearTimeout(_calcTimer);_calcTimer=setTimeout(calculate,150);}
 ['cw','gw','age','ht-ft','ht-in','sex','calSl','walkSl','liftSl','cardioSl','actSl','goalDate'].forEach(id=>{
   const el=$(id);
   if(el) el.addEventListener('input',()=>{
-    calculate();
+    debouncedCalculate();
     ph.capture('slider_moved',{field:id,value:el.value});
   });
 });
@@ -1056,6 +1062,7 @@ function toggleAccountMenu(){
 }
 async function signOutFromMenu(){
   closeAccountMenu();
+  showToast('Saving your data…',2500);
   await signOut();
 }
 function closeAccountMenu(){

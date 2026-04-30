@@ -273,7 +273,7 @@
       </div>
       <div id="cal-warn" class="banner warn" style="display:none">
         <span class="bico">⚠️</span>
-        <div><strong>Too low</strong>Below 1,200 cal/day risks muscle loss. We've capped projections at a safe rate.</div>
+        <div><strong>Too low</strong> — Below 1,200 cal/day risks muscle loss. We've capped your projection at 1,200 cal/day, so your chart reflects that floor even if you set lower.</div>
       </div>
     </div>
 
@@ -350,7 +350,7 @@
   <div class="ci-wrap">
     <div id="no-plan-warn" class="banner warn" style="display:none;margin-top:16px;">
       <span class="bico">⚠️</span>
-      <div><strong>No plan yet</strong>Set up your plan in the Calculator first.</div>
+      <div><strong>No plan yet</strong> — <button onclick="showPage('calculator')" style="background:none;border:none;color:var(--warn);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">Set up your Calculator →</button></div>
     </div>
     <div class="progress-summary" style="margin-top:16px;">
       <div class="ps-card"><div class="ps-num" id="ps-start">—</div><div class="ps-lbl">Started</div></div>
@@ -378,7 +378,7 @@
     <div class="ci-table-wrap" id="ci-table-wrap" style="display:none;"></div>
 
     <!-- SYNC NUDGE (shown when user has data but no account) -->
-    <p class="app-footer-link"><a href="privacy.html" target="_blank">Privacy Policy</a></p>
+    <p class="app-footer-link"><button onclick="exportData()" style="background:none;border:none;color:var(--gray);font-size:0.72rem;cursor:pointer;padding:0;text-decoration:underline;">Export Data</button> · <a href="privacy.html" target="_blank">Privacy Policy</a></p>
 
     <div class="sync-nudge" id="sync-nudge" style="display:none;" onclick="openSyncSheet()">
       <span class="sync-nudge-ico">☁️</span>
@@ -440,7 +440,7 @@
 
 <!-- COOKIE CONSENT BANNER -->
 <div id="cookie-banner" class="cookie-banner" style="display:none;">
-  <span>We use cookies for anonymous analytics to improve the app. Your weight data is never sold or shared. <a href="privacy.html" target="_blank" style="color:var(--green-light);">Privacy Policy</a></span>
+  <span>We use analytics cookies to understand how the app is used and improve it. Your weight data is never sold or shared. <a href="privacy.html" target="_blank" style="color:var(--green-light);">Privacy Policy</a></span>
   <div class="cookie-banner-btns">
     <button onclick="acceptCookies()" class="cookie-accept">Got it</button>
     <button onclick="declineCookies()" class="cookie-decline">Decline</button>
