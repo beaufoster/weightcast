@@ -590,7 +590,8 @@ function renderCheckinPage(){
     const diffCls=diff<0?'neg':diff>0?'pos':'zero';
     const diffTxt=diff===0?'—':(diff>0?'+':'')+diff+' lbs';
     const d=new Date(ci.date+'T12:00');
-    html+=`<div class="ci-entry" id="entry-${ci.id}">
+    const safeId=parseInt(ci.id,10)||0;
+    html+=`<div class="ci-entry" id="entry-${safeId}">
       <div class="ci-entry-left">
         <div class="ci-entry-date">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</div>
         <div class="ci-entry-wt">${fmtD(ci.weight)} lbs</div>
@@ -600,7 +601,7 @@ function renderCheckinPage(){
         <div class="ci-diff ${diffCls}">${diffTxt}</div>
         <div class="ci-total">${totalLost>0?'-'+totalLost:'+'+Math.abs(totalLost)} total</div>
       </div>
-      <button class="del-btn" onclick="deleteCheckin(${ci.id})" aria-label="Delete">🗑</button>
+      <button class="del-btn" onclick="deleteCheckin(${safeId})" aria-label="Delete">🗑</button>
     </div>`;
   });
   $('ci-entries-wrap').innerHTML='<div class="ci-entries">'+html+'</div>';
@@ -1060,7 +1061,11 @@ async function signOut(){
   await sb.auth.signOut();
   currentUser=null;
   _otpEmail='';
+  // Reset nudge dismissal so it reappears after sign-out
+  localStorage.removeItem(STORE+'sync_nudge_dismissed');
   updateSyncUI();
+  // Re-render check-in page if active so sync nudge shows
+  if($('page-checkin').classList.contains('active'))renderCheckinPage();
   ph.capture('signed_out');
 }
 async function syncUp(){
@@ -1076,7 +1081,7 @@ async function syncUp(){
       ));
     }
     if(planData){
-      ops.push(sb.from('user_plans').upsert({user_id:uid,data:planData,updated_at:new Date().toISOString()}));
+      ops.push(sb.from('user_plans').upsert({user_id:uid,data:planData,updated_at:new Date().toISOString()},{onConflict:'user_id'}));
     }
     await Promise.all(ops);
   }catch(e){console.warn('[Trimly] sync push failed:',e);}
