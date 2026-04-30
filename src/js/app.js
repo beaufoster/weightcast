@@ -1058,15 +1058,26 @@ async function resendLink(){
 }
 async function signOut(){
   if(!sb)return;
+  await syncUp(); // final push before clearing
   await sb.auth.signOut();
-  currentUser=null;
-  _otpEmail='';
-  // Reset nudge dismissal so it reappears after sign-out
-  localStorage.removeItem(STORE+'sync_nudge_dismissed');
+  // Clear account-linked local data — it's safely in the cloud
+  [STORE+'checkins',STORE+'plan',STORE+'celebrated',STORE+'sync_nudge_dismissed'].forEach(k=>localStorage.removeItem(k));
+  checkins=[];planData=null;celebratedMilestones=[];
+  currentUser=null;_otpEmail='';
   updateSyncUI();
-  // Re-render check-in page if active so sync nudge shows
-  if($('page-checkin').classList.contains('active'))renderCheckinPage();
+  updateHeroGreeting();
+  renderCheckinPage();
+  calculate();
+  showToast('Signed out. Your data is saved to your account.');
   ph.capture('signed_out');
+}
+function flashSyncIndicator(){
+  document.querySelectorAll('.account-btn.signed-in').forEach(b=>{
+    b.classList.remove('sync-flash');
+    void b.offsetWidth; // reflow to restart animation
+    b.classList.add('sync-flash');
+    setTimeout(()=>b.classList.remove('sync-flash'),1000);
+  });
 }
 async function syncUp(){
   if(!sb||!currentUser||IS_TEST||_syncInFlight)return;
@@ -1084,6 +1095,7 @@ async function syncUp(){
       ops.push(sb.from('user_plans').upsert({user_id:uid,data:planData,updated_at:new Date().toISOString()},{onConflict:'user_id'}));
     }
     await Promise.all(ops);
+    flashSyncIndicator();
   }catch(e){console.warn('[Trimly] sync push failed:',e);}
   finally{_syncInFlight=false;}
 }
@@ -1174,6 +1186,15 @@ window.exportFromMenu = exportFromMenu;
 window.dismissSyncNudge = dismissSyncNudge;
 
 window.addEventListener('resize',()=>{calculate();if($('page-checkin').classList.contains('active'))renderCheckinPage();});
+
+// Offline detection
+function updateOfflineBanner(){
+  const b=$('offline-banner');
+  if(b)b.style.display=navigator.onLine?'none':'block';
+}
+window.addEventListener('online',()=>{updateOfflineBanner();if(currentUser)syncUp();});
+window.addEventListener('offline',updateOfflineBanner);
+updateOfflineBanner();
 
 // PWA install prompt
 let deferredPrompt;

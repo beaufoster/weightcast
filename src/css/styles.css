@@ -293,6 +293,10 @@ canvas{display:block;border-radius:8px;width:100% !important;}
 .account-btn:hover{background:rgba(255,255,255,0.2);}
 .account-btn.signed-in{width:36px;height:36px;padding:0;border-radius:50%;background:var(--green-mid);border-color:var(--green-mid);font-size:0.95rem;font-weight:700;justify-content:center;letter-spacing:0;}
 .account-btn.signed-in:hover{background:#1e9950;}
+@keyframes sync-pulse{0%{box-shadow:0 0 0 0 rgba(74,190,126,0.7);}70%{box-shadow:0 0 0 7px rgba(74,190,126,0);}100%{box-shadow:0 0 0 0 rgba(74,190,126,0);}}
+.account-btn.sync-flash{animation:sync-pulse 0.9s ease;}
+/* ── OFFLINE BANNER ── */
+.offline-banner{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bottom) + 10px);left:12px;right:12px;background:#1e293b;color:#e2e8f0;font-size:0.78rem;font-weight:500;padding:10px 16px;border-radius:10px;text-align:center;z-index:400;pointer-events:none;}
 /* ── ACCOUNT MENU ── */
 .account-menu{position:fixed;top:62px;right:16px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:500;min-width:220px;}
 .account-menu-email{font-size:0.8rem;color:var(--gray);padding:4px 4px 10px;word-break:break-all;line-height:1.4;}
