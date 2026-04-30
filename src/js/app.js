@@ -1336,6 +1336,8 @@ window.editCheckin = editCheckin;
 window.cancelEditCheckin = cancelEditCheckin;
 window.toggleUnit = toggleUnit;
 window.checkSessionManually = checkSessionManually;
+window.acceptCookies = acceptCookies;
+window.declineCookies = declineCookies;
 
 window.addEventListener('resize',()=>{calculate();if($('page-checkin').classList.contains('active'))renderCheckinPage();});
 
