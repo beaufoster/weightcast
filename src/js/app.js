@@ -963,11 +963,9 @@ function showToast(msg,duration=3500){
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},duration);
 }
 function updateSyncUI(){
-  const btn=$('sync-btn');
   const nudge=$('sync-nudge');
   const acctBtns=document.querySelectorAll('.account-btn');
   if(!sb){
-    if(btn)btn.style.display='none';
     if(nudge)nudge.style.display='none';
     acctBtns.forEach(b=>b.style.display='none');
     return;
@@ -977,18 +975,9 @@ function updateSyncUI(){
     const email=currentUser.email||'';
     const initial=(email[0]||'?').toUpperCase();
     acctBtns.forEach(b=>{b.style.display='flex';b.textContent=initial;b.classList.add('signed-in');b.title='Account: '+email;});
-    if(btn){
-      const short=email.length>26?email.slice(0,24)+'…':email;
-      btn.textContent='✓ '+short;btn.title='Signed in as '+email;
-      btn.classList.add('synced');btn.onclick=signOut;
-    }
     if(nudge)nudge.style.display='none';
   } else {
     acctBtns.forEach(b=>{b.style.display='flex';b.innerHTML=personIcon+'<span>Sign In</span>';b.classList.remove('signed-in');b.title='Sign in to sync your data';});
-    if(btn){
-      btn.textContent='☁️ Create Account';btn.title='Save your progress and sync across devices';
-      btn.classList.remove('synced');btn.onclick=openSyncSheet;
-    }
     const dismissed=localStorage.getItem(STORE+'sync_nudge_dismissed');
     if(nudge)nudge.style.display=(!dismissed&&checkins.length>0)?'flex':'none';
   }
@@ -1002,9 +991,15 @@ function toggleAccountMenu(){
   menu.style.display='block';
 }
 async function signOutFromMenu(){
-  const menu=$('account-menu');
-  if(menu)menu.style.display='none';
+  closeAccountMenu();
   await signOut();
+}
+function closeAccountMenu(){
+  const menu=$('account-menu');if(menu)menu.style.display='none';
+}
+function exportFromMenu(){
+  closeAccountMenu();
+  exportData();
 }
 function dismissSyncNudge(){
   localStorage.setItem(STORE+'sync_nudge_dismissed','1');
@@ -1169,6 +1164,8 @@ window.resendLink = resendLink;
 window.signOut = signOut;
 window.toggleAccountMenu = toggleAccountMenu;
 window.signOutFromMenu = signOutFromMenu;
+window.closeAccountMenu = closeAccountMenu;
+window.exportFromMenu = exportFromMenu;
 window.dismissSyncNudge = dismissSyncNudge;
 
 window.addEventListener('resize',()=>{calculate();if($('page-checkin').classList.contains('active'))renderCheckinPage();});

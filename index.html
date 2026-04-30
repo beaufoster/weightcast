@@ -385,16 +385,7 @@
       <button class="sync-nudge-dismiss" onclick="event.stopPropagation();dismissSyncNudge()" aria-label="Dismiss">✕</button>
     </div>
 
-    <!-- DATA EXPORT / IMPORT -->
-    <div class="data-actions-bar">
-      <div class="data-actions-label">Sync across devices or back up locally.</div>
-      <div class="data-actions-btns">
-        <button class="data-btn" id="sync-btn" onclick="openSyncSheet()">☁️ Sync</button>
-        <button class="data-btn" onclick="exportData()">⬇️ Export</button>
-        <label class="data-btn import-lbl" for="import-file">⬆️ Import</label>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
-      </div>
-    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 </div>
 
@@ -443,6 +434,9 @@
 <!-- ACCOUNT MENU -->
 <div class="account-menu" id="account-menu" style="display:none;">
   <div class="account-menu-email" id="account-menu-email"></div>
+  <hr class="account-menu-hr">
+  <button class="account-menu-action" onclick="exportFromMenu()">Export backup</button>
+  <label class="account-menu-action" for="import-file" onclick="closeAccountMenu()">Import backup</label>
   <hr class="account-menu-hr">
   <button class="account-menu-action danger" onclick="signOutFromMenu()">Sign Out</button>
 </div>
