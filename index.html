@@ -74,6 +74,7 @@
       <p id="sync-otp-desc">We sent a sign-in link to your email. Click it to sign in — then return to this tab.</p>
       <div id="sync-otp-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
       <button class="sync-submit" id="sync-resend-btn" onclick="resendLink()">Resend Link</button>
+      <button class="sync-submit sync-outline-btn" id="sync-check-session-btn" onclick="checkSessionManually()">Already clicked the link →</button>
       <span class="sync-retry-link" onclick="openSyncSheet()">Use a different email</span>
     </div>
   </div>
@@ -202,7 +203,7 @@
 
     <!-- ABOUT YOU -->
     <div class="card">
-      <div class="card-title"><div class="ico">👤</div> About You</div>
+      <div class="card-title"><div class="ico">👤</div> About You<button id="unit-toggle-btn" class="unit-toggle-btn" onclick="toggleUnit()">kg</button></div>
 
       <!-- Occasion chips (date mode) -->
       <div id="occasion-section" style="display:none;margin-bottom:14px;">
@@ -223,11 +224,11 @@
       <div class="field-row">
         <div class="field">
           <label>Current Weight</label>
-          <div class="inp-wrap"><input type="number" id="cw" value="210" min="80" max="600" inputmode="decimal" class="has-sfx"><span class="sfx">lbs</span></div>
+          <div class="inp-wrap"><input type="number" id="cw" value="210" min="80" max="600" inputmode="decimal" class="has-sfx"><span class="sfx unit-sfx">lbs</span></div>
         </div>
         <div class="field" id="gw-field">
           <label>Goal Weight</label>
-          <div class="inp-wrap"><input type="number" id="gw" value="175" min="80" max="600" inputmode="decimal" class="has-sfx"><span class="sfx">lbs</span></div>
+          <div class="inp-wrap"><input type="number" id="gw" value="175" min="80" max="600" inputmode="decimal" class="has-sfx"><span class="sfx unit-sfx">lbs</span></div>
         </div>
       </div>
       <div class="field-row">
@@ -356,15 +357,16 @@
       <div class="ps-card"><div class="ps-num" id="ps-lost" style="color:var(--green)">—</div><div class="ps-lbl">Lost</div></div>
       <div class="ps-card"><div class="ps-num" id="ps-remain">—</div><div class="ps-lbl">To Go</div></div>
     </div>
-    <div class="checkin-form-card" style="margin-top:14px;">
-      <h3>➕ Log This Week</h3>
+    <div class="checkin-form-card" id="ci-log-card" style="margin-top:14px;">
+      <h3 id="checkin-form-heading">➕ Log This Week</h3>
       <p style="font-size:0.8rem;color:var(--gray);margin:-4px 0 12px;">Past dates work too — backfill old weigh-ins to migrate your history.</p>
       <div class="ci-fields">
         <div class="field"><label>Date</label><input type="date" id="ci-date"></div>
-        <div class="field"><label>Weight (lbs)</label><input type="number" id="ci-weight" placeholder="207.5" step="0.1" min="50" max="600" inputmode="decimal"></div>
+        <div class="field"><label id="lbl-ci-weight">Weight (lbs)</label><input type="number" id="ci-weight" placeholder="207.5" step="0.1" min="50" max="600" inputmode="decimal"></div>
         <div class="field ci-note-row"><label>Note (optional)</label><textarea id="ci-note" placeholder="e.g. felt bloated, period week, vacation…" maxlength="200"></textarea></div>
       </div>
-      <button class="btn-add" onclick="addCheckin()">Log It ✓</button>
+      <button class="btn-add" id="btn-add-checkin" onclick="addCheckin()">Log It ✓</button>
+      <button class="btn-cancel-edit" id="btn-cancel-edit" onclick="cancelEditCheckin()" style="display:none;">Cancel Edit</button>
       <div id="ci-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
     </div>
     <div class="ci-chart-card" id="ci-chart-card" style="display:none;">
@@ -385,7 +387,6 @@
       <button class="sync-nudge-dismiss" onclick="event.stopPropagation();dismissSyncNudge()" aria-label="Dismiss">✕</button>
     </div>
 
-    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 </div>
 
@@ -437,9 +438,6 @@
 <!-- ACCOUNT MENU -->
 <div class="account-menu" id="account-menu" style="display:none;">
   <div class="account-menu-email" id="account-menu-email"></div>
-  <hr class="account-menu-hr">
-  <button class="account-menu-action" onclick="exportFromMenu()">Export backup</button>
-  <label class="account-menu-action" for="import-file" onclick="closeAccountMenu()">Import backup</label>
   <hr class="account-menu-hr">
   <button class="account-menu-action danger" onclick="signOutFromMenu()">Sign Out</button>
 </div>

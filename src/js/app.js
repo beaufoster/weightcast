@@ -28,6 +28,9 @@ const ph = {
 
 // ══ STATE ══════════════════════════════════════════
 let pace='steady', calcMode='weight', _paceOnly=false, currentUser=null, _syncInFlight=false, _syncTimer=null, _otpEmail='';
+const KG_TO_LBS=2.20462;
+let unitPref=localStorage.getItem(STORE+'unit')||'lbs';
+let _editId=null;
 let checkins=JSON.parse(localStorage.getItem(STORE+'checkins')||'[]');
 let planData=JSON.parse(localStorage.getItem(STORE+'plan')||'null');
 let prevGoalDate=planData?planData.goalDate:null;
@@ -51,6 +54,9 @@ const escapeHtml=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&
 function addWeeks(d,w){const x=new Date(d);x.setDate(x.getDate()+Math.round(w*7));return x;}
 function fmtDate(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 function calcBMR(wt,ht,age,sex){const kg=wt*0.453592,cm=ht*2.54;return sex==='male'?10*kg+6.25*cm-5*age+5:10*kg+6.25*cm-5*age-161;}
+function toLbs(v){return unitPref==='kg'?v*KG_TO_LBS:v;}
+function fromLbs(v){return unitPref==='kg'?v/KG_TO_LBS:v;}
+function fmtWt(lbs,d=1){return fmtD(fromLbs(lbs),d)+' '+unitPref;}
 
 // ══ NAME PROMPT ═════════════════════════════════════
 function showNamePrompt(){
@@ -76,7 +82,7 @@ function updateHeroGreeting(){
 
 // ══ DEMO MODE ═══════════════════════════════════════
 function loadDemo(){
-  $('cw').value=218;$('gw').value=180;$('age').value=34;$('ht-ft').value=5;$('ht-in').value=9;$('sex').value='male';
+  $('cw').value=fmtD(fromLbs(218));$('gw').value=fmtD(fromLbs(180));$('age').value=34;$('ht-ft').value=5;$('ht-in').value=9;$('sex').value='male';
   $('calSl').value=1750;$('walkSl').value=45;$('liftSl').value=3;$('cardioSl').value=2;$('actSl').value=2;
   // Add 3 demo check-ins
   const today=new Date();
@@ -122,7 +128,7 @@ function renderShareCard(){
   ctx.fillText('Trimly',32,48);
   // Main stat
   const plan=planData;
-  const lostLbs=plan&&checkins.length?+(plan.cw-(checkins.sort((a,b)=>new Date(b.date)-new Date(a.date))[0].weight)).toFixed(1):0;
+  const lostLbs=plan&&checkins.length?+(plan.cw-([...checkins].sort((a,b)=>new Date(b.date)-new Date(a.date))[0].weight)).toFixed(1):0;
   const streak=calcStreak();
   ctx.font='bold 88px Georgia,serif';ctx.fillStyle='#fff';ctx.textAlign='center';
   ctx.fillText(lostLbs>0?`-${lostLbs}`:plan?`${plan.cw-plan.gw}`:`?`,W/2,H/2-10);
@@ -268,7 +274,7 @@ function detectPlateau(){
   if(isPlateau){
     pb.classList.remove('hidden');
     const weeksStuck=recent.length;
-    $('plateau-msg').textContent=`Your weight has barely moved over the last ${weeksStuck} check-ins (${Math.min(...weights).toFixed(1)}–${Math.max(...weights).toFixed(1)} lbs). This is normal and fixable.`;
+    $('plateau-msg').textContent=`Your weight has barely moved over the last ${weeksStuck} check-ins (${fmtWt(Math.min(...weights))}–${fmtWt(Math.max(...weights))}). This is normal and fixable.`;
     $('plateau-tips').innerHTML=`
       <div class="plateau-tip"><span class="plateau-tip-ico">🥗</span><span>Try cutting 100–150 more calories per day for 2 weeks.</span></div>
       <div class="plateau-tip"><span class="plateau-tip-ico">🚶</span><span>Add 15 minutes of walking to your daily routine.</span></div>
@@ -348,16 +354,16 @@ function renderProgressSnap(){
   if(diff>0.5){bCls='ahead';bTxt='🔥 Ahead!';}
   else if(diff>=-1.0){bCls='close';bTxt='👍 Almost There';}
   else{bCls='behind';bTxt='Keep Going 💪';}
-  $('snap-start').textContent=fmtD(startWt)+' lbs';
-  $('snap-current').textContent=fmtD(latest.weight)+' lbs';
-  $('snap-lost').textContent=(actualLost>=0?'-':'+')+Math.abs(actualLost)+' lbs';
-  $('snap-start-lbl').textContent=fmtD(startWt)+' lbs';
-  $('snap-goal-lbl').textContent=fmtD(goalWt)+' lbs';
+  $('snap-start').textContent=fmtWt(startWt);
+  $('snap-current').textContent=fmtWt(latest.weight);
+  $('snap-lost').textContent=(actualLost>=0?'-':'+')+fmtWt(Math.abs(actualLost));
+  $('snap-start-lbl').textContent=fmtWt(startWt);
+  $('snap-goal-lbl').textContent=fmtWt(goalWt);
   $('snap-pct').textContent=Math.round(pctDone)+'%';
   $('snap-fill').style.width=pctDone+'%';
   $('snap-proj-marker').style.left=projPct+'%';
   $('snap-weeks-done').textContent='Week '+weeksElapsed;
-  $('snap-pace-detail').textContent=diff>=0?Math.abs(diff).toFixed(1)+' lbs ahead':Math.abs(diff).toFixed(1)+' lbs behind';
+  $('snap-pace-detail').textContent=diff>=0?fmtWt(Math.abs(diff))+' ahead':fmtWt(Math.abs(diff))+' behind';
   const badge=$('snap-badge');
   badge.className='pace-badge '+bCls;badge.textContent=bTxt;
 }
@@ -380,7 +386,7 @@ function simulateLoss(startWt,goalWt,calIntake,exPerDay,actMult,age,ht,sex,maxLb
 
 // ══ CALCULATE ════════════════════════════════════════
 function calculate(){
-  const cw=parseFloat($('cw').value)||210;
+  const cw=toLbs(parseFloat($('cw').value)||210);
   const age=parseInt($('age').value)||35;
   const ht=((parseInt($('ht-ft').value)||5)*12)+(parseInt($('ht-in').value)||10);
   const sex=$('sex').value;
@@ -419,11 +425,11 @@ function calculate(){
     const projWt=+wtS.toFixed(1);
     const totalLost=+(cw-projWt).toFixed(1);
     const avgRate=+(totalLost/weeksAvail).toFixed(1);
-    $('r-weeks').textContent=projWt+' lbs';
+    $('r-weeks').textContent=fmtWt(projWt);
     $('r-weeks-lbl').textContent=`in ${weeksAvail} wks`;
     const gds=targetDate.toISOString();
     updateGoalDateDelta(gds);
-    $('r-date').textContent=fmtDate(targetDate);$('r-rate').textContent=fmtD(avgRate)+' lbs/wk avg';$('r-loss').textContent=totalLost+' lbs';
+    $('r-date').textContent=fmtDate(targetDate);$('r-rate').textContent=fmtWt(avgRate,2)+'/wk avg';$('r-loss').textContent=fmtWt(totalLost);
     renderMilestones(cw,projWt,avgRate,sim);renderProjChart(sim,cw,projWt);
     planData={cw,gw:projWt,sim,cal:safeCal,exPerDay,goalDate:gds,savedAt:planData?.savedAt||new Date().toISOString(),mode:'date'};
     if(!_paceOnly){
@@ -440,9 +446,9 @@ function calculate(){
     return;
   }
 
-  const gw=parseFloat($('gw').value)||175;
+  const gw=toLbs(parseFloat($('gw').value)||175);
   const totalLoss=+Math.max(cw-gw,0).toFixed(1);
-  $('r-loss').textContent=fmtD(totalLoss)+' lbs';
+  $('r-loss').textContent=fmtWt(totalLoss);
   if(totalLoss<=0){$('r-weeks').textContent='🎉';$('r-weeks-lbl').textContent='Already there!';$('r-date').textContent='—';$('r-rate').textContent='—';renderMilestones(cw,gw,0,[]);renderProjChart([],cw,gw);return;}
   const sim=simulateLoss(cw,gw,cal,exPerDay,actMults[actIdx],age,ht,sex,paceConfigs[pace].max);
   if(!sim.length||def0<50){$('r-weeks').textContent='∞';$('r-weeks-lbl').textContent='Increase deficit';$('r-date').textContent='—';$('r-rate').textContent='—';renderMilestones(cw,gw,0,sim);renderProjChart(sim,cw,gw);return;}
@@ -451,7 +457,7 @@ function calculate(){
   $('r-weeks').textContent=sim.length;$('r-weeks-lbl').textContent=`weeks (~${Math.ceil(sim.length/4.33)} mo)`;
   const gds=goalDate.toISOString();
   updateGoalDateDelta(gds);
-  $('r-date').textContent=fmtDate(goalDate);$('r-rate').textContent=fmtD(avgRate)+' lbs/wk avg';
+  $('r-date').textContent=fmtDate(goalDate);$('r-rate').textContent=fmtWt(avgRate,2)+'/wk avg';
   renderMilestones(cw,gw,avgRate,sim);renderProjChart(sim,cw,gw);
   planData={cw,gw,sim,cal:safeCal,exPerDay,goalDate:gds,savedAt:planData?.savedAt||new Date().toISOString(),mode:'weight'};
   if(!_paceOnly){
@@ -567,9 +573,9 @@ function renderCheckinPage(){
   if(!$('ci-date').value)$('ci-date').value=today;
   const plan=planData||JSON.parse(localStorage.getItem(STORE+'plan')||'null');
   $('no-plan-warn').style.display=!plan?'flex':'none';
-  if(plan)$('ps-start').textContent=fmtD(plan.cw)+' lbs';
+  if(plan)$('ps-start').textContent=fmtWt(plan.cw);
   if(!checkins.length){
-    $('ps-current').textContent=plan?fmtD(plan.cw)+' lbs':'—';$('ps-lost').textContent='0 lbs';$('ps-remain').textContent=plan?fmtD(plan.cw-plan.gw)+' lbs':'—';
+    $('ps-current').textContent=plan?fmtWt(plan.cw):'—';$('ps-lost').textContent='0 '+unitPref;$('ps-remain').textContent=plan?fmtWt(plan.cw-plan.gw):'—';
     $('ci-entries-wrap').innerHTML='<div class="empty-state"><div class="ei">📋</div><h4>No check-ins yet</h4><p>Log your weight each week to track real progress. Consistency is everything.</p></div>';
     $('ci-chart-card').style.display='none';updateSyncUI();return;
   }
@@ -579,7 +585,7 @@ function renderCheckinPage(){
   const goalWt=plan?plan.gw:startWt-35;
   const lost=+(startWt-latest.weight).toFixed(1);
   const remain=+(latest.weight-goalWt).toFixed(1);
-  $('ps-current').textContent=fmtD(latest.weight)+' lbs';$('ps-lost').textContent=(lost>0?'-':'+')+Math.abs(lost)+' lbs';$('ps-remain').textContent=fmtD(Math.max(remain,0))+' lbs';
+  $('ps-current').textContent=fmtWt(latest.weight);$('ps-lost').textContent=(lost>0?'-':'+')+fmtWt(Math.abs(lost));$('ps-remain').textContent=fmtWt(Math.max(remain,0));
   let html='';
   const reversed=[...sorted].reverse();
   reversed.forEach(ci=>{
@@ -588,19 +594,21 @@ function renderCheckinPage(){
     const diff=+(ci.weight-prev).toFixed(1);
     const totalLost=+(startWt-ci.weight).toFixed(1);
     const diffCls=diff<0?'neg':diff>0?'pos':'zero';
-    const diffTxt=diff===0?'—':(diff>0?'+':'')+diff+' lbs';
+    const diffAmt=fmtD(Math.abs(fromLbs(diff)));
+    const diffTxt=diff===0?'—':(diff>0?'+':'-')+diffAmt+' '+unitPref;
     const d=new Date(ci.date+'T12:00');
     const safeId=parseInt(ci.id,10)||0;
     html+=`<div class="ci-entry" id="entry-${safeId}">
       <div class="ci-entry-left">
         <div class="ci-entry-date">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</div>
-        <div class="ci-entry-wt">${fmtD(ci.weight)} lbs</div>
+        <div class="ci-entry-wt">${fmtWt(ci.weight)}</div>
         ${ci.note?`<div class="ci-entry-note">${escapeHtml(ci.note)}</div>`:''}
       </div>
       <div class="ci-entry-right">
         <div class="ci-diff ${diffCls}">${diffTxt}</div>
-        <div class="ci-total">${totalLost>0?'-'+totalLost:'+'+Math.abs(totalLost)} total</div>
+        <div class="ci-total">${totalLost>0?'-':'+'}${fmtD(Math.abs(fromLbs(totalLost)))} ${unitPref} total</div>
       </div>
+      <button class="edit-btn" onclick="editCheckin(${safeId})" aria-label="Edit">✏️</button>
       <button class="del-btn" onclick="deleteCheckin(${safeId})" aria-label="Delete">🗑</button>
     </div>`;
   });
@@ -674,21 +682,41 @@ function renderCheckinChart(sorted,plan,startWt,goalWt){
 
 function addCheckin(){
   const date=$('ci-date').value;
-  const weight=parseFloat($('ci-weight').value);
+  const weightRaw=parseFloat($('ci-weight').value);
+  const weight=toLbs(weightRaw);
   const note=($('ci-note').value||'').trim();
   const errEl=$('ci-error');
   if(!date){errEl.textContent='Please select a date.';errEl.style.display='block';return;}
   if(date>new Date().toISOString().split('T')[0]){errEl.textContent='Date can\'t be in the future.';errEl.style.display='block';return;}
-  if(checkins.find(c=>c.date===date)){errEl.textContent='You already logged a check-in for this date.';errEl.style.display='block';return;}
-  if(!weight||weight<50||weight>600){errEl.textContent='Enter a valid weight (50–600 lbs).';errEl.style.display='block';return;}
+  if(checkins.find(c=>c.date===date&&c.id!==_editId)){errEl.textContent='You already logged a check-in for this date.';errEl.style.display='block';return;}
+  if(!weightRaw||weight<50||weight>600){errEl.textContent='Enter a valid weight ('+(unitPref==='kg'?'23–272 kg':'50–600 lbs')+').';errEl.style.display='block';return;}
   errEl.style.display='none';
+  // Handle edit mode — remove old entry, track old date for Supabase
+  const isEdit=_editId!==null;
+  let oldDate=null;
+  if(isEdit){
+    const old=checkins.find(c=>c.id===_editId);
+    oldDate=old?.date;
+    checkins=checkins.filter(c=>c.id!==_editId);
+  }
+  const entryId=isEdit?_editId:Date.now();
   const prevStreak=calcStreak();
-  checkins.push({id:Date.now(),date,weight,note});
+  checkins.push({id:entryId,date,weight,note});
   localStorage.setItem(STORE+'checkins',JSON.stringify(checkins));
+  if(isEdit&&oldDate&&oldDate!==date)syncDeleteCheckin(oldDate);
   syncUp();
   $('ci-weight').value='';$('ci-note').value='';
+  if(isEdit){
+    _editId=null;
+    const addBtn=$('btn-add-checkin');if(addBtn)addBtn.textContent='Log It ✓';
+    const cancelBtn=$('btn-cancel-edit');if(cancelBtn)cancelBtn.style.display='none';
+    const heading=$('checkin-form-heading');if(heading)heading.textContent='➕ Log This Week';
+    showToast('Check-in updated!');
+    renderCheckinPage();calculate();
+    return;
+  }
   const newStreak=calcStreak();
-  ph.capture('checkin_logged',{weight,streak:newStreak,has_note:!!note});
+  ph.capture('checkin_logged',{streak:newStreak,has_note:!!note});
   // Check milestone celebrations ONLY here, after an actual log
   checkMilestonesAfterCheckin();
   // Check streak milestones
@@ -733,8 +761,7 @@ function setPace(p){
   });
   ph.capture('safety_cap_changed',{pace:p});
   _paceOnly=true;
-  calculate();
-  _paceOnly=false;
+  try{calculate();}finally{_paceOnly=false;}
 }
 
 // ══ PAGE NAV ══════════════════════════════════════════
@@ -790,6 +817,7 @@ function downloadPDF(){
     return`<tr><td>${labels[i]}</td><td>${Math.round(targetWt*10)/10} lbs</td><td>Week ${wk}</td><td>${fmtDate(d)}</td></tr>`;
   }).join('');
   const win=window.open('','_blank');
+  if(!win){showToast('Popup blocked — please allow popups for this site.');return;}
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Trimly — ${name}'s Plan</title>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>body{font-family:'DM Sans',sans-serif;color:#161613;padding:36px;max-width:680px;margin:0 auto;}h1{font-family:'Fraunces',serif;font-size:2rem;color:#1a6b42;margin-bottom:4px;}h2{font-family:'Fraunces',serif;font-size:1.2rem;color:#161613;margin:24px 0 10px;border-bottom:2px solid #e2e8e4;padding-bottom:5px;}.sub{color:#6b7570;font-size:0.88rem;margin-bottom:24px;}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}.stat{background:#eaf7f0;border-radius:10px;padding:12px 14px;}.stat .num{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;color:#1a6b42;}.stat .lbl{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#6b7570;margin-top:2px;}table{width:100%;border-collapse:collapse;font-size:0.85rem;}th{text-align:left;padding:8px 12px;background:#1a6b42;color:#fff;font-size:0.7rem;text-transform:uppercase;}td{padding:8px 12px;border-bottom:1px solid #e2e8e4;}tr:last-child td{border-bottom:none;}ul{line-height:2.2;font-size:0.88rem;padding-left:20px;}.footer{margin-top:36px;padding-top:14px;border-top:2px solid #e2e8e4;font-size:0.72rem;color:#9ca3af;text-align:center;}@media print{body{padding:16px;}}</style></head><body>
@@ -883,8 +911,14 @@ if(savedForm){
   if(savedForm.mode) calcMode=savedForm.mode;
   ['gentle','steady','aggressive'].forEach(n=>{const b=$('sc-'+n);if(b)b.classList.toggle('active',n===pace);});
   setMode(calcMode);
+}else if(unitPref==='kg'){
+  // Convert HTML default values (in lbs) to kg when there's no saved form
+  const cwEl=$('cw'),gwEl=$('gw');
+  if(cwEl)cwEl.value=fmtD(fromLbs(parseFloat(cwEl.value)||210));
+  if(gwEl)gwEl.value=fmtD(fromLbs(parseFloat(gwEl.value)||175));
 }
 
+updateUnitLabels();
 calculate();
 updateHeroGreeting();
 updateSyncUI();
@@ -1028,7 +1062,7 @@ async function signIn(){
   if(btn){btn.textContent='Sending…';btn.disabled=true;}
   const redirectTo=window.location.href.replace(/[?#].*/,'');
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
-  if(btn){btn.textContent='Send Code →';btn.disabled=false;}
+  if(btn){btn.textContent='Send Link →';btn.disabled=false;}
   if(error){
     console.warn('[Trimly] signInWithOtp error:',error.message,'| redirectTo:',redirectTo,'| status:',error.status);
     if(error.message.toLowerCase().includes('invalid')){
@@ -1041,13 +1075,12 @@ async function signIn(){
   }
   _otpEmail=email;
   const desc=$('sync-otp-desc');
-  if(desc)desc.textContent='We sent a 6-digit code to '+email+'. Enter it below.';
+  if(desc)desc.textContent='We sent a sign-in link to '+email+'. Click it to sign in — then return to this tab.';
   $('sync-step-email').style.display='none';
   $('sync-step-otp').style.display='block';
-  $('sync-otp').value='';
-  $('sync-otp-error').style.display='none';
-  setTimeout(()=>$('sync-otp').focus(),300);
-  ph.capture('otp_sent');
+  const errEl2=$('sync-otp-error');
+  if(errEl2)errEl2.style.display='none';
+  ph.capture('magic_link_sent');
 }
 async function resendLink(){
   if(!_otpEmail)return;
@@ -1058,16 +1091,17 @@ async function resendLink(){
 }
 async function signOut(){
   if(!sb)return;
-  await syncUp(); // final push before clearing
-  await sb.auth.signOut();
-  // Clear account-linked local data — it's safely in the cloud
+  try{
+    await Promise.race([syncUp(),new Promise(r=>setTimeout(r,3000))]);
+    await sb.auth.signOut();
+  }catch(e){console.warn('[Trimly] sign-out error:',e);}
+  // Always clear local state regardless of any auth errors
   [STORE+'checkins',STORE+'plan',STORE+'celebrated',STORE+'sync_nudge_dismissed'].forEach(k=>localStorage.removeItem(k));
   checkins=[];planData=null;celebratedMilestones=[];
   currentUser=null;_otpEmail='';
   updateSyncUI();
   updateHeroGreeting();
   renderCheckinPage();
-  calculate();
   showToast('Signed out. Your data is saved to your account.');
   ph.capture('signed_out');
 }
@@ -1149,6 +1183,86 @@ if(sb){
   });
 }
 
+// ══ EDIT CHECK-IN ════════════════════════════════════
+function editCheckin(id){
+  const ci=checkins.find(c=>c.id===id);
+  if(!ci)return;
+  _editId=id;
+  $('ci-date').value=ci.date;
+  $('ci-weight').value=fmtD(fromLbs(ci.weight));
+  $('ci-note').value=ci.note||'';
+  $('ci-error').style.display='none';
+  const addBtn=$('btn-add-checkin');if(addBtn)addBtn.textContent='Update ✓';
+  const cancelBtn=$('btn-cancel-edit');if(cancelBtn)cancelBtn.style.display='block';
+  const heading=$('checkin-form-heading');if(heading)heading.textContent='✏️ Edit Check-In';
+  const form=$('ci-log-card');
+  if(form)form.scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>$('ci-weight').focus(),350);
+}
+function cancelEditCheckin(){
+  _editId=null;
+  $('ci-date').value=new Date().toISOString().split('T')[0];
+  $('ci-weight').value='';$('ci-note').value='';
+  $('ci-error').style.display='none';
+  const addBtn=$('btn-add-checkin');if(addBtn)addBtn.textContent='Log It ✓';
+  const cancelBtn=$('btn-cancel-edit');if(cancelBtn)cancelBtn.style.display='none';
+  const heading=$('checkin-form-heading');if(heading)heading.textContent='➕ Log This Week';
+}
+
+// ══ UNIT TOGGLE (kg / lbs) ═══════════════════════════
+function toggleUnit(){
+  const old=unitPref;
+  unitPref=old==='lbs'?'kg':'lbs';
+  localStorage.setItem(STORE+'unit',unitPref);
+  ['cw','gw'].forEach(id=>{
+    const el=$(id);
+    if(el&&el.value){const v=parseFloat(el.value);if(!isNaN(v))el.value=fmtD(old==='lbs'?v/KG_TO_LBS:v*KG_TO_LBS);}
+  });
+  const ciWt=$('ci-weight');
+  if(ciWt&&ciWt.value){const v=parseFloat(ciWt.value);if(!isNaN(v))ciWt.value=fmtD(old==='lbs'?v/KG_TO_LBS:v*KG_TO_LBS);}
+  // If editing, convert the edit form value too
+  if(_editId!==null&&ciWt&&ciWt.value===''){
+    const ci=checkins.find(c=>c.id===_editId);
+    if(ci)ciWt.value=fmtD(fromLbs(ci.weight));
+  }
+  updateUnitLabels();
+  calculate();
+  if($('page-checkin').classList.contains('active'))renderCheckinPage();
+  ph.capture('unit_toggled',{unit:unitPref});
+}
+function updateUnitLabels(){
+  document.querySelectorAll('.unit-sfx').forEach(el=>el.textContent=unitPref);
+  const ciLbl=$('lbl-ci-weight');if(ciLbl)ciLbl.textContent='Weight ('+unitPref+')';
+  const btn=$('unit-toggle-btn');if(btn)btn.textContent=unitPref==='lbs'?'kg':'lbs';
+}
+
+// ══ iOS MAGIC LINK SESSION CHECK ══════════════════════
+async function checkSessionManually(){
+  if(!sb)return;
+  const btn=$('sync-check-session-btn');
+  if(btn){btn.textContent='Checking…';btn.disabled=true;}
+  try{
+    const{data}=await sb.auth.getSession();
+    if(data?.session?.user){
+      closeSyncSheet();
+      currentUser=data.session.user;
+      ph.identify(currentUser.id,{email:currentUser.email});
+      const changed=await syncDown();
+      await syncUp();
+      if(changed){renderCheckinPage();calculate();}
+      updateSyncUI();
+      showToast('✓ Signed in! Your data is backed up.');
+      ph.capture('signed_in',{event:'manual_session_check'});
+    }else{
+      if(btn){btn.textContent='Already clicked the link →';btn.disabled=false;}
+      showToast('Session not found yet — make sure you clicked the link, then try again.');
+    }
+  }catch(e){
+    if(btn){btn.textContent='Already clicked the link →';btn.disabled=false;}
+    showToast('Could not check session. Please try again.');
+  }
+}
+
 // ══ GLOBAL EXPORTS ═══════════════════════════════════
 // Expose functions to global scope for HTML onclick handlers
 window.showNamePrompt = showNamePrompt;
@@ -1184,6 +1298,10 @@ window.signOutFromMenu = signOutFromMenu;
 window.closeAccountMenu = closeAccountMenu;
 window.exportFromMenu = exportFromMenu;
 window.dismissSyncNudge = dismissSyncNudge;
+window.editCheckin = editCheckin;
+window.cancelEditCheckin = cancelEditCheckin;
+window.toggleUnit = toggleUnit;
+window.checkSessionManually = checkSessionManually;
 
 window.addEventListener('resize',()=>{calculate();if($('page-checkin').classList.contains('active'))renderCheckinPage();});
 
@@ -1195,6 +1313,15 @@ function updateOfflineBanner(){
 window.addEventListener('online',()=>{updateOfflineBanner();if(currentUser)syncUp();});
 window.addEventListener('offline',updateOfflineBanner);
 updateOfflineBanner();
+
+// Close account menu when clicking outside it
+document.addEventListener('click',e=>{
+  const menu=$('account-menu');
+  if(!menu||menu.style.display==='none')return;
+  const isAccountBtn=e.target.closest('.account-btn');
+  const isMenu=e.target.closest('#account-menu');
+  if(!isAccountBtn&&!isMenu)closeAccountMenu();
+});
 
 // PWA install prompt
 let deferredPrompt;
