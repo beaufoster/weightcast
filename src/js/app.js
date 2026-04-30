@@ -506,6 +506,7 @@ function checkMilestonesAfterCheckin(){
       celebratedMilestones.push(key);
       localStorage.setItem(STORE+'celebrated',JSON.stringify(celebratedMilestones));
       setTimeout(()=>celebrate(emojis[i],titles[i],subs[i]), delay);
+      ph.capture('milestone_celebrated',{milestone:titles[i],pct:Math.round(p*100)});
       delay+=200; // stagger if multiple hit at once
     }
   });
@@ -711,6 +712,7 @@ function addCheckin(){
     const addBtn=$('btn-add-checkin');if(addBtn)addBtn.textContent='Log It ✓';
     const cancelBtn=$('btn-cancel-edit');if(cancelBtn)cancelBtn.style.display='none';
     const heading=$('checkin-form-heading');if(heading)heading.textContent='➕ Log This Week';
+    ph.capture('checkin_edited');
     showToast('Check-in updated!');
     renderCheckinPage();calculate();
     return;
@@ -727,6 +729,7 @@ function addCheckin(){
     localStorage.setItem(STORE+'celebrated',JSON.stringify(celebratedMilestones));
     const msgs={4:'4 weeks straight. Consistency is your superpower.',8:'8-week streak! You\'re in the top 5% of people who start.',13:'13 weeks — that\'s a full quarter of commitment. 🔥',26:'Half a year of weekly check-ins. Truly remarkable.',52:'A full year streak. You are the 1%.'};
     setTimeout(()=>celebrate('🔥',`${newStreak}-Week Streak!`,msgs[newStreak]),800);
+    ph.capture('milestone_celebrated',{milestone:`${newStreak}-week streak`,pct:null});
   }
   renderCheckinPage();calculate();
 }
@@ -1048,6 +1051,7 @@ function openSyncSheet(){
   $('sync-error').style.display='none';
   $('sync-email').value='';
   setTimeout(()=>$('sync-email').focus(),300);
+  ph.capture('sign_in_opened');
 }
 function closeSyncSheet(){
   const ov=$('sync-overlay');if(ov)ov.classList.remove('show');
