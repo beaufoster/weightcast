@@ -10,8 +10,8 @@
 <title>Trimly — Weight Loss Calculator</title>
 <link rel="manifest" href="/trimly/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/trimly/assets/main-C4aHb0vv.js"></script>
-  <link rel="stylesheet" crossorigin href="/trimly/assets/main-BykrZIGp.css">
+  <script type="module" crossorigin src="/trimly/assets/main-qmFa_5ld.js"></script>
+  <link rel="stylesheet" crossorigin href="/trimly/assets/main-Dhhzx_Xx.css">
 </head>
 <body>
 
@@ -65,7 +65,7 @@
       <input type="email" id="sync-email" placeholder="your@email.com" autocomplete="email">
       <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Send Link →</button>
       <div id="sync-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
-      <p class="sync-fine-print">Free forever. We never share your data.</p>
+      <p class="sync-fine-print">Free forever. We never share your data. <a href="privacy.html" target="_blank" style="color:var(--green-light);">Privacy Policy</a></p>
     </div>
 
     <!-- Step 2: magic link sent -->
@@ -436,9 +436,20 @@
 <!-- OFFLINE BANNER -->
 <div id="offline-banner" class="offline-banner" style="display:none;">📡 No connection — data saved locally, will sync when you're back online.</div>
 
+<!-- COOKIE CONSENT BANNER -->
+<div id="cookie-banner" class="cookie-banner" style="display:none;">
+  <span>We use cookies for anonymous analytics to improve the app. Your weight data is never sold or shared. <a href="privacy.html" target="_blank" style="color:var(--green-light);">Privacy Policy</a></span>
+  <div class="cookie-banner-btns">
+    <button onclick="acceptCookies()" class="cookie-accept">Got it</button>
+    <button onclick="declineCookies()" class="cookie-decline">Decline</button>
+  </div>
+</div>
+
 <!-- ACCOUNT MENU -->
 <div class="account-menu" id="account-menu" style="display:none;">
   <div class="account-menu-email" id="account-menu-email"></div>
+  <hr class="account-menu-hr">
+  <a class="account-menu-action" href="mailto:beaudfoster@gmail.com?subject=Trimly%20Feedback" onclick="closeAccountMenu()" style="text-decoration:none;display:block;">Send feedback ✉️</a>
   <hr class="account-menu-hr">
   <button class="account-menu-action danger" onclick="signOutFromMenu()">Sign Out</button>
 </div>
