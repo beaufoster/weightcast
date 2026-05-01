@@ -1207,10 +1207,12 @@ function resetFormToDefaults(){
   pace='steady';
   ['gentle','steady','aggressive'].forEach(n=>{const b=$('sc-'+n);if(b)b.classList.toggle('active',n==='steady');});
   localStorage.removeItem(STORE+'form');
-  if(calcMode==='date')setMode('weight');else calculate();
+  _paceOnly=true;
+  try{if(calcMode==='date')setMode('weight');else calculate();}finally{_paceOnly=false;}
 }
 async function signOut(){
   if(!sb)return;
+  clearTimeout(_syncTimer);
   // Sync up first (1.5s max), then clear everything immediately before any more async work
   try{await Promise.race([syncUp(),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
   [STORE+'checkins',STORE+'plan',STORE+'celebrated',STORE+'sync_nudge_dismissed',STORE+'form',STORE+'name'].forEach(k=>localStorage.removeItem(k));
@@ -1282,7 +1284,7 @@ async function syncDown(){
         changed=true;
       }
     }
-    if(!planData&&planRow?.data){
+    if(planRow?.data){
       planData=planRow.data;
       localStorage.setItem(STORE+'plan',JSON.stringify(planData));
       changed=true;
@@ -1306,9 +1308,9 @@ if(sb){
       }
       ph.identify(currentUser.id,{email:currentUser.email});
       closeSyncSheet();
-      const changed=await syncDown();
+      await syncDown();
       await syncUp();
-      if(changed){renderCheckinPage();calculate();}
+      renderCheckinPage();calculate();
       updateSyncUI();
       if(event==='SIGNED_IN')showToast('✓ Signed in! Your data is backed up.');
       ph.capture('signed_in',{event});
@@ -1385,18 +1387,23 @@ async function checkSessionManually(){
   const btn=$('sync-check-session-btn');
   if(btn){btn.textContent='Checking…';btn.disabled=true;}
   try{
-    const{data}=await sb.auth.getSession();
-    if(data?.session?.user){
+    // Retry up to 5x with 800ms backoff — iOS PWA needs time after magic link click
+    let sessionData=null;
+    for(let attempt=0;attempt<5;attempt++){
+      if(attempt>0)await new Promise(r=>setTimeout(r,800));
+      const{data}=await sb.auth.getSession();
+      if(data?.session?.user){sessionData=data;break;}
+    }
+    if(sessionData?.session?.user){
       closeSyncSheet();
-      currentUser=data.session.user;
-      // Clear local state before syncing — same guard as the SIGNED_IN path in onAuthStateChange
+      currentUser=sessionData.session.user;
       checkins=[];planData=null;celebratedMilestones=[];
       [STORE+'checkins',STORE+'plan',STORE+'celebrated'].forEach(k=>localStorage.removeItem(k));
       _skipNextInitialSession=true;
       ph.identify(currentUser.id,{email:currentUser.email});
-      const changed=await syncDown();
+      await syncDown();
       await syncUp();
-      if(changed){renderCheckinPage();calculate();}
+      renderCheckinPage();calculate();
       updateSyncUI();
       showToast('✓ Signed in! Your data is backed up.');
       ph.capture('signed_in',{event:'manual_session_check'});
