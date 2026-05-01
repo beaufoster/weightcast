@@ -305,6 +305,7 @@ function setMode(m){
   $('gw-field').style.display=m==='weight'?'':'none';
   $('occasion-section').style.display=m==='date'?'':'none';
   const hint=$('occasion-hint');if(hint)hint.style.display=m==='weight'?'block':'none';
+  if(m==='weight')document.querySelectorAll('.occasion-chip').forEach(c=>c.classList.remove('active'));
   if(m==='date'&&!$('goalDate').value){
     const d=new Date();d.setMonth(d.getMonth()+3);
     $('goalDate').value=d.toISOString().split('T')[0];
@@ -1217,7 +1218,12 @@ if(sb){
     currentUser=session?.user||null;
     updateSyncUI();
     if(currentUser&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
-      // Link the anonymous device history to the real user account in PostHog
+      // On a new sign-in, wipe local state first so a different user's local
+      // data can't contaminate this user's account via syncUp
+      if(event==='SIGNED_IN'){
+        checkins=[];planData=null;celebratedMilestones=[];
+        [STORE+'checkins',STORE+'plan',STORE+'celebrated'].forEach(k=>localStorage.removeItem(k));
+      }
       ph.identify(currentUser.id,{email:currentUser.email});
       closeSyncSheet();
       const changed=await syncDown();
