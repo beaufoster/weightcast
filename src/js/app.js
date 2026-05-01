@@ -29,7 +29,7 @@ const ph = {
   reset(){if(IS_TEST||IS_OWNER)return;try{posthog.reset();}catch(e){}}
 };
 // ══ STATE ══════════════════════════════════════════
-let pace='steady', calcMode='weight', _paceOnly=false, currentUser=null, _syncInFlight=false, _syncTimer=null, _otpEmail='';
+let pace='steady', calcMode='weight', _paceOnly=false, currentUser=null, _syncInFlight=false, _syncTimer=null, _otpEmail='', _skipNextInitialSession=false;
 const KG_TO_LBS=2.20462;
 let unitPref=localStorage.getItem(STORE+'unit')||'lbs';
 let _editId=null;
@@ -97,7 +97,7 @@ function loadDemo(){
   localStorage.setItem(STORE+'checkins',JSON.stringify(checkins));
   celebratedMilestones=[];
   localStorage.setItem(STORE+'celebrated',JSON.stringify(celebratedMilestones));
-  calculate();
+  if(calcMode==='date')setMode('weight');else calculate();
   ph.capture('demo_loaded');
 }
 
@@ -130,12 +130,12 @@ function renderShareCard(){
   ctx.fillText('Trimly',32,48);
   // Main stat
   const plan=planData;
-  const lostLbs=plan&&checkins.length?+(plan.cw-([...checkins].sort((a,b)=>new Date(b.date)-new Date(a.date))[0].weight)).toFixed(1):0;
+  const lostRaw=plan&&checkins.length?+(plan.cw-([...checkins].sort((a,b)=>new Date(b.date)-new Date(a.date))[0].weight)).toFixed(1):0;
   const streak=calcStreak();
   ctx.font='bold 88px Georgia,serif';ctx.fillStyle='#fff';ctx.textAlign='center';
-  ctx.fillText(lostLbs>0?`-${lostLbs}`:plan?`${plan.cw-plan.gw}`:`?`,W/2,H/2-10);
+  ctx.fillText(lostRaw>0?`-${fmtD(fromLbs(lostRaw))}`:plan?`${fmtD(fromLbs(plan.cw-plan.gw))}`:`?`,W/2,H/2-10);
   ctx.font='bold 24px DM Sans,sans-serif';ctx.fillStyle='rgba(255,255,255,0.7)';
-  ctx.fillText('lbs '+(lostLbs>0?'lost so far':'goal'),W/2,H/2+30);
+  ctx.fillText(unitPref+' '+(lostRaw>0?'lost so far':'goal'),W/2,H/2+30);
   // Streak
   if(streak>0){
     ctx.font='bold 18px DM Sans,sans-serif';ctx.fillStyle='#f59e0b';ctx.textAlign='center';
@@ -146,7 +146,7 @@ function renderShareCard(){
     ctx.font='15px DM Sans,sans-serif';ctx.fillStyle='rgba(255,255,255,0.45)';
     ctx.textAlign='center';
     const goalDate=new Date(plan.goalDate);
-    ctx.fillText(`Goal: ${plan.gw} lbs by ${fmtDate(goalDate)}`,W/2,H-52);
+    ctx.fillText(`Goal: ${fmtWt(plan.gw)} by ${fmtDate(goalDate)}`,W/2,H-52);
   }
   // User name
   const name=userName||'';
@@ -468,7 +468,7 @@ function calculate(){
     localStorage.setItem(STORE+'plan',JSON.stringify(planData));
     localStorage.setItem(STORE+'form',JSON.stringify({
       cw:$('cw').value,gw:$('gw').value,age:$('age').value,
-      htFt:$('ht-ft').value,htIn:$('ht-in').value,sex:$('sex').value,
+      htFt:$('ht-ft').value,htIn:$('ht-in').value,htCm:$('ht-cm').value,sex:$('sex').value,
       cal:$('calSl').value,walk:$('walkSl').value,lift:$('liftSl').value,
       cardio:$('cardioSl').value,act:$('actSl').value,
       goalDate:$('goalDate').value,pace,mode:calcMode
@@ -495,10 +495,10 @@ function checkMilestonesAfterCheckin(){
   const emojis=['🌱','💪','⭐','🔥','🏆'];
   const titles=['10% Down!','Quarter Way!','Halfway There!','Almost Done!','Goal Reached!'];
   const subs=[
-    `You've lost ${(totalLoss*0.1).toFixed(1)} lbs. The hardest part is behind you.`,
-    `${(totalLoss*0.25).toFixed(1)} lbs down. You're building real momentum now.`,
-    `${(totalLoss*0.5).toFixed(1)} lbs lost. You're exactly halfway to your goal!`,
-    `${(totalLoss*0.75).toFixed(1)} lbs gone. The finish line is in sight!`,
+    `You've lost ${fmtWt(totalLoss*0.1)}. The hardest part is behind you.`,
+    `${fmtWt(totalLoss*0.25)} down. You're building real momentum now.`,
+    `${fmtWt(totalLoss*0.5)} lost. You're exactly halfway to your goal!`,
+    `${fmtWt(totalLoss*0.75)} gone. The finish line is in sight!`,
     `You reached your goal weight! That's incredible. 🎉`
   ];
   // Use a stable key based on the original plan start/goal, not current slider values
@@ -532,7 +532,7 @@ function renderMilestones(cw,gw,rate,sim){
     if(!wk&&sim.length)wk=sim[sim.length-1].week;
     const date=addWeeks(new Date(),wk);
     const cls=i===0?'active':'';
-    html+=`<div class="ms ${cls}"><div class="ms-dot">${icons[i]}</div><div class="ms-info"><div class="mn">${labels[i]}</div><div class="md">Week ${wk} · ${fmtDate(date)}</div></div><div class="ms-wt">${Math.round(targetWt*10)/10} lbs</div></div>`;
+    html+=`<div class="ms ${cls}"><div class="ms-dot">${icons[i]}</div><div class="ms-info"><div class="mn">${labels[i]}</div><div class="md">Week ${wk} · ${fmtDate(date)}</div></div><div class="ms-wt">${fmtWt(targetWt)}</div></div>`;
   });
   $('ms-list').innerHTML=html;
 }
@@ -564,7 +564,7 @@ function renderProjChart(sim,cw,gw){
   allPts.forEach((p,i)=>{const x=xP(i,allPts.length),y=yP(p.weight);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
   ctx.beginPath();ctx.strokeStyle='#4abe7e';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
   ctx.moveTo(pad.left,yP(gw));ctx.lineTo(W-pad.right,yP(gw));ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='#22a05a';ctx.font='bold 10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Goal: '+gw+' lbs',W-pad.right,yP(gw)-4);
+  ctx.fillStyle='#22a05a';ctx.font='bold 10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Goal: '+fmtWt(gw),W-pad.right,yP(gw)-4);
   ctx.fillStyle='#b0b8b4';ctx.font='10px DM Sans,sans-serif';ctx.textAlign='center';
   const xStep=Math.max(1,Math.floor(allPts.length/5));
   allPts.forEach((p,i)=>{if(i%xStep===0||i===allPts.length-1)ctx.fillText(i===0?'Now':'Wk '+p.week,xP(i,allPts.length),H-5);});
@@ -672,7 +672,7 @@ function renderCheckinChart(sorted,plan,startWt,goalWt){
   ctx.strokeStyle='#e0e6e2';ctx.lineWidth=1;
   for(let i=0;i<=4;i++){const y=pad.top+(cH/4)*i;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();ctx.fillStyle='#b0b8b4';ctx.font='10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV-((maxV-minV)/4)*i),pad.left-5,y+3);}
   ctx.beginPath();ctx.strokeStyle='#4abe7e';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.moveTo(pad.left,yP(goalWt));ctx.lineTo(W-pad.right,yP(goalWt));ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='#22a05a';ctx.font='bold 10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Goal: '+goalWt,W-pad.right,yP(goalWt)-4);
+  ctx.fillStyle='#22a05a';ctx.font='bold 10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Goal: '+fmtWt(goalWt),W-pad.right,yP(goalWt)-4);
   if(projPts.length>1){ctx.beginPath();ctx.strokeStyle='#b6e8ce';ctx.lineWidth=2;ctx.setLineDash([6,4]);projPts.forEach((p,i)=>i===0?ctx.moveTo(xP(p.week),yP(p.weight)):ctx.lineTo(xP(p.week),yP(p.weight)));ctx.stroke();ctx.setLineDash([]);}
   if(trendPts.length>=2){ctx.beginPath();ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.setLineDash([4,3]);trendPts.forEach((p,i)=>i===0?ctx.moveTo(xP(p.week),yP(p.weight)):ctx.lineTo(xP(p.week),yP(p.weight)));ctx.stroke();ctx.setLineDash([]);const tp=trendPts[trendPts.length-1];ctx.beginPath();ctx.arc(xP(tp.week),yP(tp.weight),4,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();}
   if(actualPts.length>1){ctx.beginPath();ctx.strokeStyle='#1a6b42';ctx.lineWidth=2.5;ctx.lineJoin='round';actualPts.forEach((p,i)=>i===0?ctx.moveTo(xP(p.week),yP(p.weight)):ctx.lineTo(xP(p.week),yP(p.weight)));ctx.stroke();}
@@ -821,13 +821,18 @@ function downloadPDF(){
   const totalLoss=+(plan.cw-plan.gw).toFixed(1);
   const weeks=plan.sim?plan.sim.length:0;
   const avgRate=weeks?(totalLoss/weeks).toFixed(1):'—';
+  const dispUnit=unitPref;
+  const dispCw=fmtD(fromLbs(plan.cw));
+  const dispGw=fmtD(fromLbs(plan.gw));
+  const dispTotalLoss=fmtD(fromLbs(totalLoss));
+  const dispAvgRate=weeks?fmtD(fromLbs(parseFloat(avgRate))):'—';
   const streak=calcStreak();
   const milestones=[0.1,0.25,0.5,0.75,1.0].map((p,i)=>{
     const labels=['10% Lost','25% Lost','Halfway!','75% Done','🏆 Goal!'];
     const targetWt=plan.cw-totalLoss*p;
     let wk=0;if(plan.sim){for(let j=0;j<plan.sim.length;j++){if(plan.sim[j].weight<=targetWt+0.5){wk=plan.sim[j].week;break;}}if(!wk&&plan.sim.length)wk=plan.sim[plan.sim.length-1].week;}
     const d=addWeeks(new Date(),wk);
-    return`<tr><td>${labels[i]}</td><td>${Math.round(targetWt*10)/10} lbs</td><td>Week ${wk}</td><td>${fmtDate(d)}</td></tr>`;
+    return`<tr><td>${labels[i]}</td><td>${fmtD(fromLbs(targetWt))} ${dispUnit}</td><td>Week ${wk}</td><td>${fmtDate(d)}</td></tr>`;
   }).join('');
   const win=window.open('','_blank');
   if(!win){showToast('Popup blocked — please allow popups for this site.');return;}
@@ -837,11 +842,11 @@ function downloadPDF(){
   <h1>Trimly — Personal Plan</h1>
   <div class="sub">For: <strong>${name}</strong> &nbsp;|&nbsp; ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}${streak>0?` &nbsp;|&nbsp; 🔥 ${streak}-week streak`:''}</div>
   <div class="grid">
-    <div class="stat"><div class="num">${plan.cw} lbs</div><div class="lbl">Starting Weight</div></div>
-    <div class="stat"><div class="num">${plan.gw} lbs</div><div class="lbl">Goal Weight</div></div>
-    <div class="stat"><div class="num">${totalLoss} lbs</div><div class="lbl">Total to Lose</div></div>
+    <div class="stat"><div class="num">${dispCw} ${dispUnit}</div><div class="lbl">Starting Weight</div></div>
+    <div class="stat"><div class="num">${dispGw} ${dispUnit}</div><div class="lbl">Goal Weight</div></div>
+    <div class="stat"><div class="num">${dispTotalLoss} ${dispUnit}</div><div class="lbl">Total to Lose</div></div>
     <div class="stat"><div class="num">${weeks} wks</div><div class="lbl">Timeline</div></div>
-    <div class="stat"><div class="num">${avgRate} lbs</div><div class="lbl">Avg Loss / Week</div></div>
+    <div class="stat"><div class="num">${dispAvgRate} ${dispUnit}</div><div class="lbl">Avg Loss / Week</div></div>
     <div class="stat"><div class="num">${fmtDate(goalDate)}</div><div class="lbl">Goal Date</div></div>
   </div>
   <h2>Milestone Timeline</h2>
@@ -1218,6 +1223,7 @@ if(sb){
     currentUser=session?.user||null;
     updateSyncUI();
     if(currentUser&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
+      if(event==='INITIAL_SESSION'&&_skipNextInitialSession){_skipNextInitialSession=false;return;}
       // On a new sign-in, wipe local state first so a different user's local
       // data can't contaminate this user's account via syncUp
       if(event==='SIGNED_IN'){
@@ -1309,6 +1315,10 @@ async function checkSessionManually(){
     if(data?.session?.user){
       closeSyncSheet();
       currentUser=data.session.user;
+      // Clear local state before syncing — same guard as the SIGNED_IN path in onAuthStateChange
+      checkins=[];planData=null;celebratedMilestones=[];
+      [STORE+'checkins',STORE+'plan',STORE+'celebrated'].forEach(k=>localStorage.removeItem(k));
+      _skipNextInitialSession=true;
       ph.identify(currentUser.id,{email:currentUser.email});
       const changed=await syncDown();
       await syncUp();
