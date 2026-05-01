@@ -432,6 +432,17 @@ body.is-test{padding-top:26px;}
 .share-action-btn{padding:12px;border-radius:10px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;}
 .share-action-btn.primary{background:var(--green);color:#fff;}
 
+/* ── TREND CARD ── */
+.trend-card{margin:12px 0;}
+.trend-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.trend-label{font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray);}
+.trend-rate{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:900;}
+.trend-rate.good{color:var(--green);}
+.trend-rate.bad{color:var(--red);}
+.trend-rate.neutral{color:var(--gray);}
+.trend-detail{font-size:0.85rem;color:var(--dark);line-height:1.5;margin-bottom:4px;}
+.trend-footnote{font-size:0.72rem;color:var(--gray);}
+
 /* ── APP FOOTER LINK ── */
 .app-footer-link{text-align:center;padding:20px 0 8px;font-size:0.72rem;}
 .app-footer-link a{color:var(--gray);text-decoration:none;}

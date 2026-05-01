@@ -572,6 +572,63 @@ function renderProjChart(sim,cw,gw){
   const li=allPts.length-1;ctx.beginPath();ctx.arc(xP(li,allPts.length),yP(allPts[li].weight),5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.strokeStyle='#1a6b42';ctx.lineWidth=2;ctx.stroke();ctx.fill();
 }
 
+// ══ TREND PROJECTION ══════════════════════════════════
+function calcTrend(){
+  if(checkins.length<3)return null;
+  const plan=planData||JSON.parse(localStorage.getItem(STORE+'plan')||'null');
+  const sorted=[...checkins].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const origin=new Date(sorted[0].date+'T12:00');
+  const pts=sorted.map(ci=>{
+    const d=new Date(ci.date+'T12:00');
+    return{week:(d-origin)/(7*24*3600*1000),weight:ci.weight};
+  });
+  const n=pts.length;
+  const sumX=pts.reduce((a,p)=>a+p.week,0),sumY=pts.reduce((a,p)=>a+p.weight,0);
+  const sumXY=pts.reduce((a,p)=>a+p.week*p.weight,0),sumX2=pts.reduce((a,p)=>a+p.week*p.week,0);
+  const denom=n*sumX2-sumX*sumX;
+  if(denom===0)return null;
+  const slope=(n*sumXY-sumX*sumY)/denom;
+  const intercept=(sumY-slope*sumX)/n;
+  const goalWt=plan?plan.gw:null;
+  let weeksToGoal=null,projGoalDate=null;
+  if(goalWt!==null&&slope<-0.01){
+    const weeksFromOriginToGoal=(goalWt-intercept)/slope;
+    const weeksFromNow=weeksFromOriginToGoal-pts[n-1].week;
+    if(weeksFromNow>0&&weeksFromNow<520){
+      weeksToGoal=Math.round(weeksFromNow);
+      projGoalDate=addWeeks(new Date(),weeksFromNow);
+    }
+  }
+  return{slope,weeksToGoal,projGoalDate,goalWt,n};
+}
+function renderTrendCard(){
+  const card=$('trend-card');
+  if(!card)return;
+  if(checkins.length<3){card.style.display='none';return;}
+  const trend=calcTrend();
+  if(!trend){card.style.display='none';return;}
+  card.style.display='block';
+  const{slope,weeksToGoal,projGoalDate,goalWt,n}=trend;
+  const rateAbs=fromLbs(Math.abs(slope));
+  const rateStr=fmtD(rateAbs,1)+' '+unitPref+'/wk';
+  const countEl=$('trend-count');if(countEl)countEl.textContent=n;
+  const rateEl=$('trend-rate');
+  const detailEl=$('trend-detail');
+  if(slope<-0.05){
+    if(rateEl){rateEl.textContent='−'+rateStr;rateEl.className='trend-rate good';}
+    if(detailEl){
+      if(projGoalDate)detailEl.textContent=`At this rate you'll hit ${fmtWt(goalWt)} by ${fmtDate(projGoalDate)} (~${weeksToGoal} wks)`;
+      else detailEl.textContent='Trending in the right direction — keep it up!';
+    }
+  }else if(slope>0.05){
+    if(rateEl){rateEl.textContent='+'+rateStr;rateEl.className='trend-rate bad';}
+    if(detailEl)detailEl.textContent='Currently trending up — consider adjusting calories or exercise.';
+  }else{
+    if(rateEl){rateEl.textContent='~0 '+unitPref+'/wk';rateEl.className='trend-rate neutral';}
+    if(detailEl)detailEl.textContent='Weight is stable — you may have hit a plateau.';
+  }
+}
+
 // ══ CHECK-IN PAGE ═════════════════════════════════════
 function renderCheckinPage(){
   const today=new Date().toISOString().split('T')[0];
@@ -582,7 +639,7 @@ function renderCheckinPage(){
   if(!checkins.length){
     $('ps-current').textContent=plan?fmtWt(plan.cw):'—';$('ps-lost').textContent='0 '+unitPref;$('ps-remain').textContent=plan?fmtWt(plan.cw-plan.gw):'—';
     $('ci-entries-wrap').innerHTML='<div class="empty-state"><div class="ei">📋</div><h4>No check-ins yet</h4><p>Log your weight each week to track real progress. Consistency is everything.</p></div>';
-    $('ci-chart-card').style.display='none';updateSyncUI();return;
+    $('ci-chart-card').style.display='none';const tc=$('trend-card');if(tc)tc.style.display='none';updateSyncUI();return;
   }
   const sorted=[...checkins].sort((a,b)=>new Date(a.date)-new Date(b.date));
   const latest=sorted[sorted.length-1];
@@ -620,6 +677,7 @@ function renderCheckinPage(){
   $('ci-entries-wrap').innerHTML='<div class="ci-entries">'+html+'</div>';
   $('ci-chart-card').style.display='block';
   renderCheckinChart(sorted,plan,startWt,goalWt);
+  renderTrendCard();
   updateSyncUI();
 }
 
@@ -1142,7 +1200,7 @@ async function signOut(){
   if(!sb)return;
   try{
     await Promise.race([syncUp(),new Promise(r=>setTimeout(r,3000))]);
-    await sb.auth.signOut();
+    await sb.auth.signOut({scope:'local'});
   }catch(e){console.warn('[Trimly] sign-out error:',e);}
   // Always clear local state regardless of any auth errors
   [STORE+'checkins',STORE+'plan',STORE+'celebrated',STORE+'sync_nudge_dismissed'].forEach(k=>localStorage.removeItem(k));
@@ -1220,6 +1278,7 @@ async function syncDown(){
 }
 if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_OUT'){currentUser=null;updateSyncUI();return;}
     currentUser=session?.user||null;
     updateSyncUI();
     if(currentUser&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
