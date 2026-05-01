@@ -10,8 +10,8 @@
 <title>Trimly — Weight Loss Calculator</title>
 <link rel="manifest" href="/trimly/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/trimly/assets/main-Dq8BFako.js"></script>
-  <link rel="stylesheet" crossorigin href="/trimly/assets/main-D5VWXRSp.css">
+  <script type="module" crossorigin src="/trimly/assets/main-BFP038jG.js"></script>
+  <link rel="stylesheet" crossorigin href="/trimly/assets/main-3Etz5Ver.css">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
     <p>We'll use your name to personalize your milestones and celebrate your wins.</p>
     <input type="text" id="name-input" placeholder="Your first name" maxlength="30" autocomplete="given-name">
     <button class="name-prompt-submit" onclick="saveName()">Let's Go →</button>
-    <span class="name-prompt-skip" onclick="saveName(true)">Skip for now</span>
+    <button class="name-prompt-skip-btn" onclick="saveName(true)">Skip for now</button>
   </div>
 </div>
 
@@ -200,6 +200,7 @@
           <span class="mico">📅</span>Target Date
         </button>
       </div>
+      <p id="occasion-hint" class="occasion-hint">Planning for a wedding, vacation, or event? <button onclick="setMode('date')" style="background:none;border:none;color:var(--green);font-weight:600;cursor:pointer;padding:0;font-size:inherit;">Switch to Target Date →</button></p>
     </div>
 
     <!-- ABOUT YOU -->
@@ -225,11 +226,11 @@
       <div class="field-row">
         <div class="field">
           <label>Current Weight</label>
-          <div class="inp-wrap"><input type="number" id="cw" value="210" min="80" max="600" inputmode="decimal" class="has-sfx"><span class="sfx unit-sfx">lbs</span></div>
+          <div class="inp-wrap"><input type="number" id="cw" value="210" min="80" max="500" inputmode="decimal" class="has-sfx"><span class="sfx unit-sfx">lbs</span></div>
         </div>
         <div class="field" id="gw-field">
           <label>Goal Weight</label>
-          <div class="inp-wrap"><input type="number" id="gw" value="175" min="80" max="600" inputmode="decimal" class="has-sfx"><span class="sfx unit-sfx">lbs</span></div>
+          <div class="inp-wrap"><input type="number" id="gw" value="175" min="80" max="500" inputmode="decimal" class="has-sfx"><span class="sfx unit-sfx">lbs</span></div>
         </div>
       </div>
       <div class="field-row">
@@ -244,7 +245,7 @@
           </div>
         </div>
       </div>
-      <div class="field-row">
+      <div class="field-row" id="ht-ft-row">
         <div class="field">
           <label>Height (ft)</label>
           <div class="inp-wrap"><input type="number" id="ht-ft" value="5" min="3" max="8" inputmode="numeric" class="has-sfx"><span class="sfx">ft</span></div>
@@ -252,6 +253,12 @@
         <div class="field">
           <label>Height (in)</label>
           <div class="inp-wrap"><input type="number" id="ht-in" value="10" min="0" max="11" inputmode="numeric" class="has-sfx"><span class="sfx">in</span></div>
+        </div>
+      </div>
+      <div class="field-row" id="ht-cm-row" style="display:none;">
+        <div class="field">
+          <label>Height</label>
+          <div class="inp-wrap"><input type="number" id="ht-cm" value="178" min="91" max="243" inputmode="numeric" class="has-sfx"><span class="sfx">cm</span></div>
         </div>
       </div>
     </div>
@@ -268,7 +275,7 @@
           <span class="sl-lbl">Daily Calorie Target</span>
           <div class="sl-val-wrap"><span class="sl-val" id="cal-v">1,800</span><span class="sl-unit"> cal/day</span></div>
         </div>
-        <input type="range" id="calSl" min="1000" max="4000" value="1800" step="50">
+        <input type="range" id="calSl" min="1000" max="4000" value="1800" step="50" aria-label="Daily calorie intake">
         <div class="sl-ticks"><span>1,000</span><span>2,000</span><span>3,000</span><span>4,000</span></div>
         <div class="sl-hint">Most adults need 1,500–2,500 cal/day. Below 1,200 is not recommended.</div>
       </div>
@@ -283,25 +290,25 @@
       <div class="card-title"><div class="ico">🏃</div> Exercise</div>
       <div class="sl-group">
         <div class="sl-head"><span class="sl-lbl">🚶 Walking / Light Cardio</span><div class="sl-val-wrap"><span class="sl-val" id="walk-v">30</span><span class="sl-unit"> min/day</span></div></div>
-        <input type="range" id="walkSl" min="0" max="120" value="30" step="5">
+        <input type="range" id="walkSl" min="0" max="120" value="30" step="5" aria-label="Minutes walking per day">
         <div class="sl-ticks"><span>0</span><span>30</span><span>60</span><span>90</span><span>120</span></div>
         <div class="sl-hint">~3.5 cal/min. A 30-min walk burns ~105 calories.</div>
       </div>
       <div class="sl-group">
         <div class="sl-head"><span class="sl-lbl">🏋️ Strength Training</span><div class="sl-val-wrap"><span class="sl-val" id="lift-v">3</span><span class="sl-unit"> days/wk</span></div></div>
-        <input type="range" id="liftSl" min="0" max="7" value="3" step="1">
+        <input type="range" id="liftSl" min="0" max="7" value="3" step="1" aria-label="Lifting sessions per week">
         <div class="sl-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>7</span></div>
         <div class="sl-hint">~300 cal/session. Raises resting metabolism long-term.</div>
       </div>
       <div class="sl-group">
         <div class="sl-head"><span class="sl-lbl">🚴 Intense Cardio</span><div class="sl-val-wrap"><span class="sl-val" id="cardio-v">2</span><span class="sl-unit"> days/wk</span></div></div>
-        <input type="range" id="cardioSl" min="0" max="7" value="2" step="1">
+        <input type="range" id="cardioSl" min="0" max="7" value="2" step="1" aria-label="Cardio sessions per week">
         <div class="sl-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>7</span></div>
         <div class="sl-hint">~500 cal/session. HIIT, running, cycling, swimming.</div>
       </div>
       <div class="sl-group" style="margin-bottom:0">
         <div class="sl-head"><span class="sl-lbl">🛋️ Base Activity</span><div class="sl-val-wrap"><span class="sl-val" id="act-v" style="font-size:0.9rem;font-family:'DM Sans',sans-serif;font-weight:700">Lightly Active</span></div></div>
-        <input type="range" id="actSl" min="1" max="4" value="2" step="1">
+        <input type="range" id="actSl" min="1" max="4" value="2" step="1" aria-label="General activity level">
         <div class="sl-ticks"><span>Sedentary</span><span>Light</span><span>Moderate</span><span>Very Active</span></div>
         <div class="sl-hint">Your movement outside of dedicated workouts.</div>
       </div>
