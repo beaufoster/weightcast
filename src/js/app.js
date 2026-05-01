@@ -86,6 +86,8 @@ function updateHeroGreeting(){
 
 // ══ DEMO MODE ═══════════════════════════════════════
 function loadDemo(){
+  if(checkins.length>0&&!confirm('This will replace your check-ins with demo data. Continue?'))return;
+  cancelEditCheckin();
   $('cw').value=fmtD(fromLbs(218));$('gw').value=fmtD(fromLbs(180));$('age').value=34;$('ht-ft').value=5;$('ht-in').value=9;$('ht-cm').value=175;$('sex').value='male';
   $('calSl').value=1750;$('walkSl').value=45;$('liftSl').value=3;$('cardioSl').value=2;$('actSl').value=2;
   // Add 3 demo check-ins
@@ -336,7 +338,7 @@ function updateGoalDateDelta(newGoalDateStr){
 
 // ══ PROGRESS SNAPSHOT ════════════════════════════════
 function renderProgressSnap(){
-  const plan=JSON.parse(localStorage.getItem(STORE+'plan')||'null');
+  const plan=planData;
   const snap=$('progress-snap');
   if(!checkins.length||!plan){snap.classList.remove('visible');return;}
   snap.classList.add('visible');
@@ -719,8 +721,9 @@ function renderCheckinChart(sorted,plan,startWt,goalWt){
       const trendStart=actualPts[0].week;
       const startWeight=slope*trendStart+intercept;
       let endWeek,endWeight;
-      if(slope<0){const crossWeek=(goalWt-intercept)/slope;endWeek=Math.ceil(crossWeek);endWeight=goalWt;}
-      else{endWeek=projPts.length?projPts[projPts.length-1].week:actualPts[actualPts.length-1].week+12;endWeight=Math.min(slope*endWeek+intercept,startWt);}
+      const maxReasonableWeek=Math.max(projPts.length?projPts[projPts.length-1].week:0,actualPts[actualPts.length-1].week+26);
+      if(slope<0){const crossWeek=(goalWt-intercept)/slope;endWeek=Math.min(Math.ceil(crossWeek),maxReasonableWeek);endWeight=slope*endWeek+intercept;}
+      else{endWeek=maxReasonableWeek;endWeight=Math.min(slope*endWeek+intercept,startWt);}
       trendPts=[{week:trendStart,weight:startWeight},{week:endWeek,weight:endWeight}];
     }
   } else if(actualPts.length===1){
@@ -829,14 +832,12 @@ function deleteCheckin(id){
 // ══ PACE / SAFETY CAP ══════════════════════════════
 function setPace(p){
   pace=p;
-  // Update safety cap buttons in result drawer
   ['gentle','steady','aggressive'].forEach(n=>{
     const btn=$('sc-'+n);
     if(btn) btn.classList.toggle('active',n===p);
   });
   ph.capture('safety_cap_changed',{pace:p});
-  _paceOnly=true;
-  try{calculate();}finally{_paceOnly=false;}
+  calculate();
 }
 
 // ══ PAGE NAV ══════════════════════════════════════════
@@ -1317,18 +1318,23 @@ async function syncDown(){
       }
     }
     if(planRow?.data){
-      planData=planRow.data;
-      localStorage.setItem(STORE+'plan',JSON.stringify(planData));
-      changed=true;
+      const remoteStr=JSON.stringify(planRow.data);
+      const localStr=JSON.stringify(planData);
+      if(remoteStr!==localStr){
+        planData=planRow.data;
+        localStorage.setItem(STORE+'plan',JSON.stringify(planData));
+        changed=true;
+      }
     }
     return changed;
   }catch(e){console.warn('[Trimly] sync pull failed:',e);return false;}
 }
 if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='SIGNED_OUT'){currentUser=null;updateSyncUI();return;}
+    if(event==='SIGNED_OUT'){currentUser=null;localStorage.removeItem(STORE+'user_hint');updateSyncUI();return;}
     if(event==='TOKEN_REFRESHED'&&!currentUser)return;
     currentUser=session?.user||null;
+    if(!currentUser)localStorage.removeItem(STORE+'user_hint');
     updateSyncUI();
     if(currentUser&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
       if(event==='INITIAL_SESSION'&&_skipNextInitialSession){_skipNextInitialSession=false;return;}
