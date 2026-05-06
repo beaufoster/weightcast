@@ -1160,6 +1160,7 @@ async function signIn(){
   const btn=$('sync-submit-btn');
   if(btn){btn.textContent='Sending…';btn.disabled=true;}
   const redirectTo=window.location.href.replace(/[?#].*/,'');
+  sessionStorage.removeItem(STORE+'signed_out');
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
   if(btn){btn.textContent='Send Link →';btn.disabled=false;}
   if(error){
@@ -1246,13 +1247,14 @@ async function signOut(){
   resetFormToDefaults();
   showToast('Signed out. Your data is saved to your account.');
   ph.capture('signed_out');
-  // Revoke server session — must use 'global' so the refresh token is invalidated
-  // on the server, otherwise Supabase re-establishes the session and fires INITIAL_SESSION
+  // Mark this session as explicitly signed out so INITIAL_SESSION can't auto-restore
+  // a residual access token on pull-to-refresh. Uses sessionStorage so it clears when
+  // the tab is closed (allowing normal auto-sign-in on a fresh tab).
+  sessionStorage.setItem(STORE+'signed_out','1');
+  // Revoke server refresh token so the session can't be re-established from a new tab
+  // after the sessionStorage flag is gone.
   try{await Promise.race([sb.auth.signOut({scope:'global'}),new Promise(r=>setTimeout(r,1500))]);}
   catch(e){console.warn('[Trimly] sign-out error:',e);}
-  // Supabase writes its own auth token to localStorage (sb-*-auth-token). Clear it
-  // manually so a page reload can't find a residual JWT and auto-sign back in.
-  Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k));
 }
 function flashSyncIndicator(){
   document.querySelectorAll('.account-btn.signed-in').forEach(b=>{
@@ -1323,6 +1325,7 @@ async function syncDown(){
 if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==='SIGNED_OUT'){currentUser=null;localStorage.removeItem(STORE+'user_hint');updateSyncUI();return;}
+    if((event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&sessionStorage.getItem(STORE+'signed_out'))return;
     if(event==='TOKEN_REFRESHED'&&!currentUser)return;
     currentUser=session?.user||null;
     if(!currentUser)localStorage.removeItem(STORE+'user_hint');
