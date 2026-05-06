@@ -627,10 +627,10 @@ function renderCheckinPage(){
   const sorted=[...checkins].sort((a,b)=>new Date(a.date)-new Date(b.date));
   const latest=sorted[sorted.length-1];
   const startWt=plan?plan.cw:sorted[0].weight;
-  const goalWt=plan?plan.gw:startWt-35;
+  const goalWt=plan?plan.gw:null;
   const lost=+(startWt-latest.weight).toFixed(1);
-  const remain=+(latest.weight-goalWt).toFixed(1);
-  $('ps-current').textContent=fmtWt(latest.weight);$('ps-lost').textContent=(lost>0?'-':'+')+fmtWt(Math.abs(lost));$('ps-remain').textContent=fmtWt(Math.max(remain,0));
+  const remain=goalWt!==null?+(latest.weight-goalWt).toFixed(1):null;
+  $('ps-current').textContent=fmtWt(latest.weight);$('ps-lost').textContent=(lost>0?'-':'+')+fmtWt(Math.abs(lost));$('ps-remain').textContent=remain!==null?fmtWt(Math.max(remain,0)):'—';
   let html='';
   const reversed=[...sorted].reverse();
   reversed.forEach(ci=>{
@@ -729,7 +729,7 @@ function renderCheckinChart(sorted,plan,startWt,goalWt){
   for(let w=0;w<=maxWeek;w+=Math.max(1,Math.floor(maxWeek/5)))ctx.fillText(w===0?'Start':'Wk '+w,xP(w),H-5);
 }
 
-function addCheckin(){
+async function addCheckin(){
   const btn=$('btn-add-checkin');
   if(btn)btn.disabled=true;
   const date=$('ci-date').value;
@@ -754,8 +754,8 @@ function addCheckin(){
   const prevStreak=calcStreak();
   checkins.push({id:entryId,date,weight,note});
   localStorage.setItem(STORE+'checkins',JSON.stringify(checkins));
-  if(isEdit&&oldDate&&oldDate!==date)syncDeleteCheckin(oldDate);
-  syncUp();
+  if(isEdit&&oldDate&&oldDate!==date)await syncDeleteCheckin(oldDate);
+  syncUp().catch(()=>{});
   $('ci-weight').value='';$('ci-note').value='';
   if(isEdit){
     _editId=null;
@@ -924,20 +924,13 @@ $('share-overlay').addEventListener('click',e=>{if(e.target===$('share-overlay')
 $('sync-overlay').addEventListener('click',e=>{if(e.target===$('sync-overlay'))closeSyncSheet();});
 
 // Enter key shortcuts
-$('name-input').addEventListener('keydown',e=>{if(e.key==='Enter')saveName();});
+const nameInput=$('name-input');if(nameInput)nameInput.addEventListener('keydown',e=>{if(e.key==='Enter')saveName();});
 $('ci-date').addEventListener('keydown',e=>{if(e.key==='Enter')$('ci-weight').focus();});
 $('ci-weight').addEventListener('keydown',e=>{if(e.key==='Enter')addCheckin();});
 $('ci-note').addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')addCheckin();});
 $('modal-name').addEventListener('keydown',e=>{if(e.key==='Enter')$('modal-email').focus();});
 $('modal-email').addEventListener('keydown',e=>{if(e.key==='Enter')submitModal();});
 $('sync-email').addEventListener('keydown',e=>{if(e.key==='Enter')signIn();});
-
-// Close account menu on outside click
-document.addEventListener('click',e=>{
-  const menu=$('account-menu');
-  if(menu&&menu.style.display!=='none'&&!e.target.closest('.account-btn')&&!e.target.closest('#account-menu'))
-    menu.style.display='none';
-});
 
 // Escape closes any open overlay
 document.addEventListener('keydown',e=>{
@@ -1160,7 +1153,7 @@ async function signIn(){
   const btn=$('sync-submit-btn');
   if(btn){btn.textContent='Sending…';btn.disabled=true;}
   const redirectTo=window.location.href.replace(/[?#].*/,'');
-  sessionStorage.removeItem(STORE+'signed_out');
+  localStorage.removeItem(STORE+'signed_out');
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
   if(btn){btn.textContent='Send Link →';btn.disabled=false;}
   if(error){
@@ -1247,9 +1240,9 @@ async function signOut(){
   resetFormToDefaults();
   showToast('Signed out. Your data is saved to your account.');
   ph.capture('signed_out');
-  // Block INITIAL_SESSION from auto-restoring the session on pull-to-refresh within
-  // this tab session. Uses sessionStorage (persists through refreshes, cleared on tab close).
-  sessionStorage.setItem(STORE+'signed_out','1');
+  // Block INITIAL_SESSION from auto-restoring the session across all tabs and page loads
+  // until the user explicitly signs in again. Uses localStorage so it persists after tab close.
+  localStorage.setItem(STORE+'signed_out','1');
   // scope:'local' clears the local token. We avoid scope:'global' because it revokes
   // all server sessions including any newly created by a magic link re-sign-in, which
   // causes the new session to silently expire and wipe data on the next page refresh.
@@ -1325,7 +1318,7 @@ async function syncDown(){
 if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==='SIGNED_OUT'){currentUser=null;localStorage.removeItem(STORE+'user_hint');updateSyncUI();return;}
-    if((event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&sessionStorage.getItem(STORE+'signed_out'))return;
+    if((event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&localStorage.getItem(STORE+'signed_out'))return;
     if(event==='TOKEN_REFRESHED'&&!currentUser)return;
     currentUser=session?.user||null;
     if(!currentUser)localStorage.removeItem(STORE+'user_hint');
