@@ -10,8 +10,8 @@
 <title>Trimly — Weight Loss Calculator</title>
 <link rel="manifest" href="/trimly/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/trimly/assets/main-BRnUlWGU.js"></script>
-  <link rel="stylesheet" crossorigin href="/trimly/assets/main-B-62XykC.css">
+  <script type="module" crossorigin src="/trimly/assets/main-C9bLWv9g.js"></script>
+  <link rel="stylesheet" crossorigin href="/trimly/assets/main-DQqZ-A4A.css">
 </head>
 <body>
 
@@ -57,26 +57,17 @@
   <div class="sync-sheet">
     <button class="sync-close" onclick="closeSyncSheet()">✕</button>
 
-    <!-- Step 1: Email -->
-    <div id="sync-step-email">
+    <!-- Auth: Sign In / Sign Up -->
+    <div id="sync-step-auth">
       <span class="sync-ico">☁️</span>
-      <h2>Save Your Progress</h2>
-      <p>Create a free account to keep your data safe and access it from any device — no password needed.</p>
+      <h2 id="sync-auth-title">Save Your Progress</h2>
+      <p id="sync-auth-desc">Create a free account to keep your data safe and access it from any device.</p>
       <input type="email" id="sync-email" placeholder="your@email.com" autocomplete="email">
-      <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Send Link →</button>
+      <input type="password" id="sync-password" placeholder="Password (min 6 characters)" autocomplete="new-password" minlength="6" style="margin-top:10px;">
       <div id="sync-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
+      <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Create Account →</button>
+      <span class="sync-retry-link" id="sync-mode-toggle" onclick="toggleAuthMode()" style="display:block;text-align:center;margin-top:12px;cursor:pointer;">Already have an account? Sign in</span>
       <p class="sync-fine-print">Free forever. We never share your data. <a href="privacy.html" target="_blank" style="color:var(--green-light);">Privacy Policy</a></p>
-    </div>
-
-    <!-- Step 2: magic link sent -->
-    <div id="sync-step-otp" style="display:none;">
-      <span class="sync-ico">📬</span>
-      <h2>Check Your Email</h2>
-      <p id="sync-otp-desc">We sent a sign-in link to your email. Click it to sign in — then return to this tab.</p>
-      <div id="sync-otp-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
-      <button class="sync-submit" id="sync-resend-btn" onclick="resendLink()">Resend Link</button>
-      <button class="sync-submit sync-outline-btn" id="sync-check-session-btn" onclick="checkSessionManually()">Already clicked the link →</button>
-      <span class="sync-retry-link" onclick="openSyncSheet()">Use a different email</span>
     </div>
   </div>
 </div>
