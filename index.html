@@ -10,7 +10,7 @@
 <title>Trimly — Weight Loss Calculator</title>
 <link rel="manifest" href="/trimly/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/trimly/assets/main-C9bLWv9g.js"></script>
+  <script type="module" crossorigin src="/trimly/assets/main-DCo8rXQ6.js"></script>
   <link rel="stylesheet" crossorigin href="/trimly/assets/main-DQqZ-A4A.css">
 </head>
 <body>
@@ -57,7 +57,7 @@
   <div class="sync-sheet">
     <button class="sync-close" onclick="closeSyncSheet()">✕</button>
 
-    <!-- Auth: Sign In / Sign Up -->
+    <!-- Auth: Sign In / Sign Up / Forgot -->
     <div id="sync-step-auth">
       <span class="sync-ico">☁️</span>
       <h2 id="sync-auth-title">Save Your Progress</h2>
@@ -67,7 +67,18 @@
       <div id="sync-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
       <button class="sync-submit" id="sync-submit-btn" onclick="signIn()">Create Account →</button>
       <span class="sync-retry-link" id="sync-mode-toggle" onclick="toggleAuthMode()" style="display:block;text-align:center;margin-top:12px;cursor:pointer;">Already have an account? Sign in</span>
+      <span class="sync-retry-link" id="sync-forgot-link" onclick="setForgotMode()" style="display:none;font-size:0.78rem;opacity:0.7;margin-top:6px;">Forgot password?</span>
       <p class="sync-fine-print">Free forever. We never share your data. <a href="privacy.html" target="_blank" style="color:var(--green-light);">Privacy Policy</a></p>
+    </div>
+
+    <!-- Set new password (after clicking reset email link) -->
+    <div id="sync-step-recover" style="display:none;">
+      <span class="sync-ico">🔑</span>
+      <h2>Set Your Password</h2>
+      <p>Choose a new password for your Trimly account.</p>
+      <input type="password" id="sync-recover-password" placeholder="New password (min 6 characters)" autocomplete="new-password" minlength="6">
+      <div id="sync-recover-error" style="color:var(--red);font-size:0.8rem;margin-top:8px;display:none;"></div>
+      <button class="sync-submit" id="sync-recover-btn" onclick="setNewPassword()">Save Password →</button>
     </div>
   </div>
 </div>
