@@ -1,4 +1,4 @@
-const CACHE = 'trimly-v1';
+const CACHE = 'trimly-v2';
 
 // Cache versioned (hashed) assets permanently, network-first for navigation
 self.addEventListener('fetch', e => {
