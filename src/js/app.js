@@ -1383,9 +1383,11 @@ async function syncDown(){
     return changed;
   }catch(e){console.warn('[Trimly] sync pull failed:',e);return false;}
 }
+// Capture recovery intent before Supabase clears the hash
+const _recoveryUrl=new URLSearchParams(window.location.hash.slice(1)).get('type')==='recovery';
 if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='PASSWORD_RECOVERY'){
+    if(event==='PASSWORD_RECOVERY'||((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&_recoveryUrl)){
       currentUser=session?.user||null;
       $('sync-overlay').classList.add('show');
       $('sync-step-auth').style.display='none';
