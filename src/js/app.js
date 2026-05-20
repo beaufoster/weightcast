@@ -1208,8 +1208,7 @@ async function signIn(){
   const btn=$('sync-submit-btn');
   if(_authMode==='forgot'){
     if(btn){btn.textContent='Sending…';btn.disabled=true;}
-    const redirect = window.location.origin + window.location.pathname + window.location.search;
-    const{error:resetErr}=await sb.auth.resetPasswordForEmail(email, { redirectTo: redirect });
+    const{error:resetErr}=await sb.auth.resetPasswordForEmail(email);
     if(btn){btn.textContent='Send Reset Email →';btn.disabled=false;}
     if(resetErr){errEl.textContent=resetErr.message;errEl.style.display='block';return;}
     $('sync-auth-title').textContent='Check Your Email';
