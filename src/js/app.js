@@ -1265,6 +1265,7 @@ function _updateAuthModeUI(){
 }
 function closeSyncSheet(){
   const ov=$('sync-overlay');if(ov)ov.classList.remove('show');
+  updateSyncUI();
 }
 async function signIn(){
   if(!sb)return;
@@ -1469,6 +1470,7 @@ if(sb){
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==='PASSWORD_RECOVERY'||((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&_recoveryUrl)){
       currentUser=session?.user||null;
+      updateSyncUI();
       $('sync-overlay').classList.add('show');
       $('sync-step-auth').style.display='none';
       $('sync-step-recover').style.display='block';
