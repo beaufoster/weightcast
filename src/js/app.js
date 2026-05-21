@@ -616,6 +616,7 @@ function renderTrendCard(){
 
 // ══ CHECK-IN PAGE ═════════════════════════════════════
 function renderCheckinPage(){
+  const _scrollY=window.scrollY;
   const today=new Date().toISOString().split('T')[0];
   if(!$('ci-date').value)$('ci-date').value=today;
   const plan=planData||JSON.parse(localStorage.getItem(STORE+'plan')||'null');
@@ -660,6 +661,7 @@ function renderCheckinPage(){
     </div>`;
   });
   $('ci-entries-wrap').innerHTML='<div class="ci-entries">'+html+'</div>';
+  requestAnimationFrame(()=>window.scrollTo(0,_scrollY));
   $('ci-chart-card').style.display='block';
   const emptyHint=$('ci-chart-empty');
   if(emptyHint)emptyHint.style.display=checkins.length<3?'block':'none';
@@ -831,7 +833,7 @@ function showPage(name){
   localStorage.setItem(STORE+'page',name);
   ph.capture('page_viewed',{page:name});
   window.scrollTo(0,0);
-  if(name==='checkin'){renderCheckinPage();setTimeout(()=>$('ci-weight').focus(),100);}
+  if(name==='checkin'){renderCheckinPage();if(!('ontouchstart' in window))setTimeout(()=>$('ci-weight').focus(),100);}
   if(name==='calculator')setTimeout(calculate,50);
 }
 
@@ -919,13 +921,15 @@ function downloadPDF(){
 }
 
 // ══ EVENTS ═════════════════════════════════════════════
-let _calcTimer;
+let _calcTimer,_phSliderTimer,_phSliderLast={};
 function debouncedCalculate(){clearTimeout(_calcTimer);_calcTimer=setTimeout(calculate,150);}
 ['cw','gw','age','ht-ft','ht-in','ht-cm','sex','calSl','walkSl','liftSl','cardioSl','actSl','goalDate'].forEach(id=>{
   const el=$(id);
   if(el) el.addEventListener('input',()=>{
     debouncedCalculate();
-    ph.capture('slider_moved',{field:id,value:el.value});
+    _phSliderLast[id]=el.value;
+    clearTimeout(_phSliderTimer);
+    _phSliderTimer=setTimeout(()=>{Object.entries(_phSliderLast).forEach(([f,v])=>ph.capture('slider_moved',{field:f,value:v}));_phSliderLast={};},600);
   });
 });
 $('modal-overlay').addEventListener('click',e=>{if(e.target===$('modal-overlay'))closeModal();});
@@ -1169,7 +1173,7 @@ function openSyncSheet(){
   $('sync-password').value='';
   _authMode=localStorage.getItem(STORE+'user_hint')?'signin':'signup';
   _updateAuthModeUI();
-  setTimeout(()=>$('sync-email').focus(),300);
+  if(!('ontouchstart' in window))setTimeout(()=>$('sync-email').focus(),300);
   ph.capture('sign_in_opened');
 }
 function openAccountSettings(){
@@ -1430,12 +1434,16 @@ async function syncDown(){
       if(profile.unit_pref&&profile.unit_pref!==unitPref){unitPref=profile.unit_pref;localStorage.setItem(STORE+'unit',unitPref);updateUnitLabels();}
     }
     let changed=false;
-    if(remote?.length){
-      const localDates=new Set(checkins.map(c=>c.date));
-      const newOnes=remote.filter(r=>!localDates.has(r.date))
-        .map(r=>({id:r.app_id||Date.now()+Math.floor(Math.random()*1000),date:r.date,weight:r.weight,note:r.note||''}));
-      if(newOnes.length){
-        checkins=[...checkins,...newOnes].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    if(remote){
+      // Remote is authoritative: sync in both directions.
+      // Keep remote entries (server wins for anything in DB) + local-only entries
+      // not yet uploaded. This means deletions on another device propagate here.
+      const remoteDates=new Set(remote.map(r=>r.date));
+      const localOnly=checkins.filter(c=>!remoteDates.has(c.date));
+      const fromRemote=remote.map(r=>({id:r.app_id||Date.now()+Math.floor(Math.random()*1000),date:r.date,weight:r.weight,note:r.note||''}));
+      const merged=[...fromRemote,...localOnly].sort((a,b)=>new Date(a.date)-new Date(b.date));
+      if(JSON.stringify(merged)!==JSON.stringify(checkins)){
+        checkins=merged;
         localStorage.setItem(STORE+'checkins',JSON.stringify(checkins));
         changed=true;
       }
