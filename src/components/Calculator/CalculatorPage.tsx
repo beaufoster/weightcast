@@ -151,8 +151,19 @@ export function CalculatorPage({ plan, checkins, unit, onSavePlan, onUnitChange 
   const [form, setFormRaw] = useState<FormState>(() => loadSavedForm(plan, unit))
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const phTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const planSyncedRef = useRef(false)
 
   const result = useMemo(() => runCalc(form, calcMode, pace, unit, plan), [form, calcMode, pace, unit, plan])
+
+  // When plan loads from Supabase (sign-in on fresh device), sync form if no local form cache exists
+  useEffect(() => {
+    if (plan && !planSyncedRef.current && !localStorage.getItem(keys.form)) {
+      planSyncedRef.current = true
+      setFormRaw(loadSavedForm(plan, unit))
+      if (plan.pace) setPace(plan.pace)
+      if (plan.mode) setCalcMode(plan.mode)
+    }
+  }, [plan])
 
   // Persist form as display cache whenever it changes
   useEffect(() => { saveFormCache(form, calcMode, pace) }, [form, calcMode, pace])

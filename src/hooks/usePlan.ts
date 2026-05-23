@@ -35,7 +35,7 @@ export function usePlan(user: User | null) {
       saveLocal(plan)
       return plan
     },
-    initialData: loadLocal,
+    placeholderData: loadLocal,          // show cache while fetching; unlike initialData, never blocks the fetch
     staleTime: 30_000,
   })
 

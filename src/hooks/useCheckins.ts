@@ -51,7 +51,7 @@ export function useCheckins(user: User | null) {
       saveLocal(remote)                 // keep cache warm for offline
       return remote
     },
-    initialData: loadLocal,             // render immediately from cache
+    placeholderData: loadLocal,          // show cache while fetching; unlike initialData, never blocks the fetch
     staleTime: 30_000,
   })
 
