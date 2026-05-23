@@ -1327,6 +1327,7 @@ async function setNewPassword(){
   const btn=$('sync-recover-btn');
   if(btn){btn.textContent='Saving…';btn.disabled=true;}
   _recoveryUrl=false; // Prevent SIGNED_IN event from reopening the recovery overlay
+  localStorage.removeItem(STORE+'signed_out'); // Allow INITIAL_SESSION to sync on next page load
   const{error}=await sb.auth.updateUser({password});
   if(error){errEl.textContent=error.message;errEl.style.display='block';if(btn){btn.textContent='Save Password →';btn.disabled=false;}return;}
   $('sync-step-recover').style.display='none';
@@ -1334,6 +1335,7 @@ async function setNewPassword(){
   closeSyncSheet();
   showToast('Password set! You\'re now signed in.');
   ph.capture('password_set');
+  localStorage.setItem(STORE+'page','checkin');
   if(currentUser){await syncDown();restoreFormFromPlanData(planData);renderCheckinPage();calculate();updateSyncUI();syncUp().catch(()=>{});}
 }
 function restoreFormFromPlanData(plan){
@@ -1382,7 +1384,7 @@ async function signOut(){
   if(!sb)return;
   clearTimeout(_syncTimer);
   try{await Promise.race([syncUp(),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
-  [STORE+'sync_nudge_dismissed',STORE+'form',STORE+'user_hint',STORE+'page'].forEach(k=>localStorage.removeItem(k));
+  [STORE+'sync_nudge_dismissed',STORE+'user_hint',STORE+'page'].forEach(k=>localStorage.removeItem(k));
   checkins=[];planData=null;celebratedMilestones=[];userName='';
   currentUser=null;
   ph.reset();
@@ -1530,7 +1532,7 @@ if(sb){
         closeSyncSheet();
         await syncDown();
       }
-      restoreFormFromPlanData(planData);
+      if(event==='SIGNED_IN'||!savedForm)restoreFormFromPlanData(planData);
       renderCheckinPage();calculate();
       updateSyncUI();
       if(event==='SIGNED_IN')showToast(`✓ Welcome back${userName?', '+userName:''}! Your data is backed up.`);
