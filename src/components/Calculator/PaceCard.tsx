@@ -18,13 +18,13 @@ export function PaceCard({ pace, unit, onPaceChange }: Props) {
   return (
     <div className="card">
       <div className="card-title"><div className="ico">⚡</div> Pace</div>
-      <div className="scap-row">
+      <div className="pace-grid">
         {(['gentle', 'steady', 'aggressive'] as Pace[]).map(p => (
-          <button key={p} id={`sc-${p}`} className={`scap-btn pace-btn${pace === p ? ' active' : ''}`}
+          <button key={p} id={`sc-${p}`} className={`pace-btn${pace === p ? ' active' : ''}`}
             onClick={() => onPaceChange(p)}>
             <span className="pico">{p === 'gentle' ? '🐢' : p === 'steady' ? '🚶' : '🔥'}</span>
             <span className="pname">{p.charAt(0).toUpperCase() + p.slice(1)}</span>
-            <span className={`sc-desc pdesc`}>{descs[p]}</span>
+            <span className="pdesc">{descs[p]}</span>
           </button>
         ))}
       </div>
