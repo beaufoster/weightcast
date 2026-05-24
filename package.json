@@ -1,9 +1,9 @@
 {
-  "name": "trimly",
+  "name": "weightcast",
   "version": "1.0.0",
-  "description": "A progressive web app for tracking weight loss progress and calculating personalized weight loss plans.",
+  "description": "Know exactly when you'll hit your goal.",
   "main": "index.html",
-  "homepage": "https://beaufoster.github.io/trimly",
+  "homepage": "https://weightcast.com",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

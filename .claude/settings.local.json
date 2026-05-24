@@ -28,7 +28,8 @@
       "Bash(npx vitest *)",
       "Read(//tmp/**)",
       "Read(//private/tmp/**)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
       "/Users/beau/Documents/app_creations"

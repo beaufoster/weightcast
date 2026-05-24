@@ -9,7 +9,7 @@ export const keys = {
   form:              STORE + 'form',
   celebrated:        STORE + 'celebrated',
   syncNudgeDismissed: STORE + 'sync_nudge_dismissed',
-  deviceId:          'trimly_device_id',
-  ownerMode:         'trimly_owner_mode',
-  cookieConsent:     'trimly_cookie_consent',
+  deviceId:          'weightcast_device_id',
+  ownerMode:         'weightcast_owner_mode',
+  cookieConsent:     'weightcast_cookie_consent',
 } as const

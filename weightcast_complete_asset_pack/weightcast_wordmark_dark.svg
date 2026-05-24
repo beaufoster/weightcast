@@ -1,0 +1,6 @@
+
+<svg width="1200" height="300" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="300" fill="#f4f7f5"/>
+<text x="80" y="190" font-size="120" font-family="serif" fill="#1a2e23">Weight</text>
+<text x="560" y="190" font-size="120" font-family="serif" fill="#22a05a">Cast</text>
+</svg>
