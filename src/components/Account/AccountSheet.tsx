@@ -23,9 +23,14 @@ export function AccountSheet({ user, profile, unit, onUpdateUnit, onUpdateName }
 
   async function saveName() {
     setSaving('name')
-    await onUpdateName(name)
-    setSaving(null)
-    showToast('Name updated.')
+    try {
+      await onUpdateName(name)
+      showToast('Name updated.')
+    } catch {
+      showToast('Could not save name. Check your connection.')
+    } finally {
+      setSaving(null)
+    }
   }
 
   async function saveEmail() {
