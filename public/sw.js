@@ -1,4 +1,4 @@
-const CACHE = 'weightcast-v1';
+const CACHE = 'weightcast-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 
