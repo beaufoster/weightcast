@@ -47,12 +47,12 @@ export function useCheckins(user: User | null) {
   const query = useQuery({
     queryKey: uid ? checkinKeys.all(uid) : ['checkins', 'offline'],
     queryFn: async () => {
-      if (!uid) return loadLocal().length ? loadLocal() : DEMO_CHECKINS
+      if (!uid) return DEMO_CHECKINS
       const remote = await fetchRemote(uid)
-      saveLocal(remote)                 // keep cache warm for offline
+      saveLocal(remote)
       return remote
     },
-    placeholderData: () => loadLocal().length ? loadLocal() : DEMO_CHECKINS,
+    placeholderData: () => uid ? (loadLocal().length ? loadLocal() : undefined) : DEMO_CHECKINS,
     staleTime: 30_000,
   })
 

@@ -168,19 +168,21 @@ export function CalculatorPage({ user, plan, checkins, unit, onSavePlan, onUnitC
     }
   }, [plan])
 
-  // Auto-sync current weight field from latest check-in
+  // Auto-sync current weight field from latest check-in (only when signed in)
   useEffect(() => {
-    if (!checkins.length) return
+    if (!user || !checkins.length) return
     const sorted = [...checkins].sort((a, b) => b.date.localeCompare(a.date))
     const latestWt = sorted[0].weight
     if (latestWt !== lastSyncedWtRef.current) {
       lastSyncedWtRef.current = latestWt
       setFormRaw(prev => ({ ...prev, cw: fmtD(fromLbs(latestWt, unit)) }))
     }
-  }, [checkins, unit])
+  }, [checkins, unit, user])
 
-  // Persist form as display cache whenever it changes
-  useEffect(() => { saveFormCache(form, calcMode, pace) }, [form, calcMode, pace])
+  // Persist form as display cache only when signed in (avoids demo values leaking into localStorage)
+  useEffect(() => {
+    if (user) saveFormCache(form, calcMode, pace)
+  }, [form, calcMode, pace, user])
 
   // Analytics debounce
   const trackSlider = useCallback(() => {

@@ -25,7 +25,7 @@ export function usePlan(user: User | null) {
   const query = useQuery({
     queryKey: uid ? planKeys.all(uid) : ['plan', 'offline'],
     queryFn: async () => {
-      if (!uid || !supabase) return loadLocal() ?? DEMO_PLAN
+      if (!uid || !supabase) return DEMO_PLAN
       const { data, error } = await supabase
         .from('user_plans')
         .select('data')
@@ -36,7 +36,7 @@ export function usePlan(user: User | null) {
       saveLocal(plan)
       return plan
     },
-    placeholderData: () => loadLocal() ?? DEMO_PLAN,
+    placeholderData: () => uid ? (loadLocal() ?? undefined) : DEMO_PLAN,
     staleTime: 30_000,
   })
 
