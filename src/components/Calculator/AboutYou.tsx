@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { CalcMode, Unit } from '@/types'
 import { KG_TO_LBS, fmtD } from '@/utils/calculator'
 
@@ -27,6 +28,8 @@ const OCCASIONS = [
 ]
 
 export function AboutYou({ form, unit, calcMode, onFormChange, onUnitChange, onSave, saveState }: Props) {
+  const [activeOccasion, setActiveOccasion] = useState<string | null>(null)
+
   function toggleUnit() {
     const next: Unit = unit === 'lbs' ? 'kg' : 'lbs'
     const factor = next === 'kg' ? 1 / KG_TO_LBS : KG_TO_LBS
@@ -40,9 +43,10 @@ export function AboutYou({ form, unit, calcMode, onFormChange, onUnitChange, onS
     })
   }
 
-  function setOccasion(months: number) {
+  function setOccasion(label: string, months: number) {
     const d = new Date()
     d.setMonth(d.getMonth() + months)
+    setActiveOccasion(label)
     onFormChange({ goalDate: d.toISOString().split('T')[0] })
   }
 
@@ -61,13 +65,13 @@ export function AboutYou({ form, unit, calcMode, onFormChange, onUnitChange, onS
           <div className="field" style={{ marginBottom: 8 }}><label>What's the occasion?</label></div>
           <div className="occasion-chips">
             {OCCASIONS.map(o => (
-              <button key={o.label} className="occasion-chip" onClick={() => setOccasion(o.months)}>{o.label}</button>
+              <button key={o.label} className={`occasion-chip${activeOccasion === o.label ? ' active' : ''}`} onClick={() => setOccasion(o.label, o.months)}>{o.label}</button>
             ))}
           </div>
           <div className="field">
             <label>Target Date</label>
             <div className="inp-wrap">
-              <input type="date" id="goalDate" value={form.goalDate} onChange={e => onFormChange({ goalDate: e.target.value })} />
+              <input type="date" id="goalDate" value={form.goalDate} onChange={e => { setActiveOccasion(null); onFormChange({ goalDate: e.target.value }) }} />
             </div>
           </div>
         </div>
